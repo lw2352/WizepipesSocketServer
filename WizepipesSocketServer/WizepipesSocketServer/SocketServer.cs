@@ -35,7 +35,7 @@ namespace WizepipesSocketServer
 
                 ServerSocket.BeginAccept(new AsyncCallback(OnAccept), null);
 
-                if (!ThreadPool.QueueUserWorkItem(this.CheckDatagramQueue)) return false;//数据包处理线程
+                //if (!ThreadPool.QueueUserWorkItem(this.CheckDatagramQueue)) return false;//数据包处理线程
             }
             catch (Exception ex)
             {
