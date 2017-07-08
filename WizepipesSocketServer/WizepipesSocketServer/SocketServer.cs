@@ -7,6 +7,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
+//TODO:在item类里面存socket和地址等值，也存发送函数等，那样就可以直接发送，不用匹配id和socket
+
+
 namespace WizepipesSocketServer
 {
     class SocketServer
