@@ -17,7 +17,7 @@ namespace WizepipesSocketServer
         public static Hashtable htAddressItem = new Hashtable();
         public static Hashtable htIDItem = new Hashtable();
         public static Socket ServerSocket;
-        public Queue<byte[]> dataQueue = new Queue<byte[]>();
+        
         public int perPackageLength = 1009;//每包的长度
         public int checkDataQueueTimeInterval = 100;// 检查数据包队列时间休息间隔(ms)
         public bool IsServerOpen = true;
@@ -66,8 +66,8 @@ namespace WizepipesSocketServer
                     htAddressItem.Add(strAddress, addressItem);
                     //Once the client connects then start receiving the commands from her
                     //开始从连接的socket异步接收数据
-                    clientSocket.BeginReceive(addressItem.buffer, 0, addressItem.buffer.Length, SocketFlags.None,
-                    new AsyncCallback(OnReceive), clientSocket);
+                    addressItem.socket.BeginReceive(addressItem.buffer, 0, addressItem.buffer.Length, SocketFlags.None,
+                    new AsyncCallback(addressItem.OnReceive), addressItem);
                 }
             }
             catch (Exception ex)
@@ -77,34 +77,6 @@ namespace WizepipesSocketServer
             }
         }
 
-        private void OnReceive(IAsyncResult ar)
-        {
-            string msg = "";
-            try
-            {
-                Socket clientSocket = (Socket)ar.AsyncState;
-                string strAddress = clientSocket.RemoteEndPoint.ToString();
-                AddressItem addressItem = (AddressItem)htAddressItem[strAddress];//取出当前地址对应的item
-
-                int bytesRead = clientSocket.EndReceive(ar);//接收到的数据长度
-                if (bytesRead == 0)
-                {
-                    CloseSocket();//关闭socket
-                }
-                else if(addressItem.buffer[0] == 0xA5 && addressItem.buffer[1] == 0xA5 && addressItem.buffer[bytesRead-2] == 0x5A && addressItem.buffer[bytesRead-1] == 0x5A)//判断报文头和尾
-                {
-                    byte[] recData = new byte[bytesRead];
-                    Array.Copy(addressItem.buffer, recData, bytesRead);
-                    dataQueue.Enqueue(recData);//Enqueue 将对象添加到 Queue<T> 的结尾处
-                }
-            }
-            catch (Exception ex)
-            {
-                string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
-                System.Diagnostics.Debug.WriteLine(error);
-            }
-
-        }
 
         private void CheckDatagramQueue(object state)
         {
