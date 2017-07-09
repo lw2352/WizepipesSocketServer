@@ -18,6 +18,8 @@ namespace WizepipesSocketServer
             string msg = "";
             try
             {
+                msg = "收到地址" + strAddress + "发来的数据+\r\n";
+                System.Diagnostics.Debug.WriteLine(msg);
                 AddressItem item = ar.AsyncState as AddressItem ;
                 int bytesRead = socket.EndReceive(ar);//接收到的数据长度
                 if (bytesRead == 0)
