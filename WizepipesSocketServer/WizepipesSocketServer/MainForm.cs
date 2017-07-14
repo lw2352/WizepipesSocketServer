@@ -19,7 +19,7 @@ namespace WizepipesSocketServer
         private void button1_Click(object sender, EventArgs e)
         {
             SocketServer server = new SocketServer();
-            server.OpenServer("192.168.1.106", 8080);
+            server.OpenServer("192.168.1.106", 8088);
         }
     }
 }
