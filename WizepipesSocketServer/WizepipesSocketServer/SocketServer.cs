@@ -13,10 +13,12 @@ namespace WizepipesSocketServer
 {
     class SocketServer
     {
-        //TODO:心跳包（掉线重连）等需要for循环哈希表的函数放在server类里面，其余不需要哈希表的放在DataItem类里面
+        //TODO:心跳包（掉线重连）等需要for循环哈希表的函数放在server类里面，其余不需要哈希表的放在DataItem类里面;加一个字典<id,socket>,发送命令方便
+        
 
         public static Hashtable htClient = new Hashtable();
         public static Socket ServerSocket;
+        public static Dictionary<int, Socket> DictClient = new Dictionary<int, Socket>();
 
         /// <summary>
         /// TODO：做成函数：初始化服务器的输入参数，可以配置
@@ -187,11 +189,7 @@ namespace WizepipesSocketServer
             {
                 try
                 {
-                    foreach (DataItem dataItem in htClient.Values)
-                    {
-                        
-
-                    }
+                    
                 }
                 catch (Exception ex)
                 {
