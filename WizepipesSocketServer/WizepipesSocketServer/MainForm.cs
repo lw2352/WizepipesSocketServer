@@ -11,6 +11,7 @@ namespace WizepipesSocketServer
 {
     public partial class MainForm : Form
     {
+        SocketServer server = new SocketServer();
         public MainForm()
         {
             InitializeComponent();
@@ -18,8 +19,12 @@ namespace WizepipesSocketServer
 
         private void button1_Click(object sender, EventArgs e)
         {
-            SocketServer server = new SocketServer();
-            server.OpenServer("192.168.3.83", 8088);
+            server.OpenServer("192.168.10.169", 8088);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            server.UploadData();
         }
     }
 }
