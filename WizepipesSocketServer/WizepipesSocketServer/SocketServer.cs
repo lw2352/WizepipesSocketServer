@@ -16,9 +16,9 @@ namespace WizepipesSocketServer
         //TODO:心跳包（掉线重连）等需要for循环哈希表的函数放在server类里面，其余不需要哈希表的放在DataItem类里面;加一个字典<id,socket>,发送命令方便
         
 
-        public static Hashtable htClient = new Hashtable();
+        public static Hashtable htClient = new Hashtable();//strAddress--DataItem
         public static Socket ServerSocket;
-        public static Dictionary<int, Socket> DictClient = new Dictionary<int, Socket>();
+        public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
 
         /// <summary>
         /// TODO：做成函数：初始化服务器的输入参数，可以配置
@@ -28,7 +28,6 @@ namespace WizepipesSocketServer
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
-        public string url = @"D:\\Data";
 
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);//处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程
@@ -189,7 +188,17 @@ namespace WizepipesSocketServer
             {
                 try
                 {
-                    
+                    foreach (DictionaryEntry de in htSendCmd)
+                    {
+                        if (htClient.ContainsKey(de.Key))//
+                        {
+                            Queue<byte[]> queueSendCmd = de.Value as Queue<byte[]>;
+                            DataItem dataitem = htClient[de.Key] as DataItem;//取出address对应的dataitem
+
+                        }
+
+
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -258,36 +267,7 @@ namespace WizepipesSocketServer
             }
         }
 
-        //保存文件，16进制，封装开头是0xAA，结尾是0x55
-        private void StoreDataToFile(int intDeviceID, byte[] bytes)
-        {
-            string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + intDeviceID.ToString();//以日期时间命名，避免文件名重复
-            byte[] fileStartAndEnd = new byte[2] { 0xAA, 0x55 };//保存文件的头是AA，尾是55
-            //string url = "D:\\Data";
-
-            if (!Directory.Exists(url))//如果不存在就创建file文件夹　　             　　                
-            {
-                Directory.CreateDirectory(url);//创建该文件夹　
-
-                string path = url + filename + ".dat";
-                FileStream F = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-                F.Write(fileStartAndEnd, 0, 1);
-                F.Write(bytes, 0, bytes.Length);
-                F.Write(fileStartAndEnd, 1, 1);
-                F.Flush();
-                F.Close();
-            }
-            else
-            {
-                string path = url + filename + ".dat";
-                FileStream F = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-                F.Write(fileStartAndEnd, 0, 1);
-                F.Write(bytes, 0, bytes.Length);
-                F.Write(fileStartAndEnd, 1, 1);
-                F.Flush();
-                F.Close();
-            }
-        }
+        
 
     }
 }

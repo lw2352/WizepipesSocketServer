@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -63,10 +64,96 @@ namespace WizepipesSocketServer
             }
         }
 
+        //处理数据和写入数据库
         public void AnalyzeData(byte[] datagramBytes)
         {
+            string msg = "";
             switch (datagramBytes[2])
             {
+                case 0x21:
+                    if (datagramBytes[7] == 0x00)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--读取开启时长和关闭时长成功" + "\n";
+                        Console.WriteLine(msg);
+                        //ShowMsg(msg);
+                    }
+                    if (buffer[7] == 0x01)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
+                        Console.WriteLine(msg);
+                        //ShowMsg(msg);
+                    }
+                    break;
+
+                case 0x22:
+                    if (buffer[9] == 0xAA)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--AD采样开始" + "\n";
+                    }
+                    else if (buffer[9] == 0x55)
+                    {
+                        //dataitem.CmdStage = 1;
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--AD采样结束" + "\n";
+                    }
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x25:
+                    if (buffer[9] == 0x55)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定GPS采样时间成功" + "\n";
+                        Console.WriteLine(msg);
+                        //ShowMsg(msg);
+                    }
+
+                    break;
+
+                case 0x26:
+                    if (buffer[7] == 0x01)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
+                        Console.WriteLine(msg);
+                       // ShowMsg(msg);
+                    }
+                    break;
+
+                case 0x27:
+                    int[] gpsData = new int[23];
+                    for (int i = 0; i < 23; i++)
+                    {
+                        //gpsData[i] = dataitem.SingleBuffer[9 + i];
+                    }
+                    //gpsDistance.getGPSData(gpsData, out dataitem.Latitude, out dataitem.Longitude);
+                    //msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--经度为：" + dataitem.Longitude + "纬度为：" + dataitem.Latitude + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x29:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定服务器IP成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x30:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定服务器端口号成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x31:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定AP名称成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x32:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--设定AP密码成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
                 case 0x23:
                     if (datagramBytes.Length >= 1007)
                     {
@@ -79,7 +166,7 @@ namespace WizepipesSocketServer
 
                             if (status.currentsendbulk == 600)
                             {
-                                //StoreDataToFile(dataItem.intDeviceID, dataItem.status.byteAllData);
+                                StoreDataToFile(intDeviceID, status.byteAllData);
                                 //置状态为上传完毕
                                 status.currentsendbulk = 0;
                                 status.IsSendDataToServer = false;
@@ -138,6 +225,37 @@ namespace WizepipesSocketServer
             {
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
+            }
+        }
+
+        //保存文件，16进制，封装开头是0xAA，结尾是0x55
+        private void StoreDataToFile(int intDeviceID, byte[] bytes)
+        {
+            string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + intDeviceID.ToString();//以日期时间命名，避免文件名重复
+            byte[] fileStartAndEnd = new byte[2] { 0xAA, 0x55 };//保存文件的头是AA，尾是55
+            string url = @"D:\\Data";
+
+            if (!Directory.Exists(url))//如果不存在就创建file文件夹　　             　　                
+            {
+                Directory.CreateDirectory(url);//创建该文件夹　
+
+                string path = url + filename + ".dat";
+                FileStream F = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                F.Write(fileStartAndEnd, 0, 1);
+                F.Write(bytes, 0, bytes.Length);
+                F.Write(fileStartAndEnd, 1, 1);
+                F.Flush();
+                F.Close();
+            }
+            else
+            {
+                string path = url + filename + ".dat";
+                FileStream F = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                F.Write(fileStartAndEnd, 0, 1);
+                F.Write(bytes, 0, bytes.Length);
+                F.Write(fileStartAndEnd, 1, 1);
+                F.Flush();
+                F.Close();
             }
         }
 
