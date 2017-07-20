@@ -32,7 +32,10 @@ namespace WizepipesSocketServer
         public Status status; //设备运行时的属性
 
         public Queue<byte[]> recDataQueue = new Queue<byte[]>();//数据接收队列
+        public Queue<byte[]> sendDataQueue = new Queue<byte[]>();//数据发送队列
         private delegate void AsyncAnalyzeData(byte[] data);
+
+
         /// <summary>
         /// 初始化DataItem
         /// </summary>
@@ -61,6 +64,16 @@ namespace WizepipesSocketServer
                 byte[] datagramBytes = recDataQueue.Dequeue();// Dequeue 移除并返回位于 Queue<T> 开始处的对象
                 AsyncAnalyzeData method = new AsyncAnalyzeData(AnalyzeData);
                 method.BeginInvoke(datagramBytes, null, null);
+            }
+        }
+
+        public void SendData()
+        {
+            if (recDataQueue.Count > 0)
+            {
+                byte[] datagramBytes = recDataQueue.Peek(); // Dequeue 返回位于 Queue<T> 开始处的对象但不移除
+                SendCmd(datagramBytes);
+                //TODO:发送一条命令后，记录命令号，得到相应的返回信息后再移除队列中的信息；还要加互斥信号量。
             }
         }
 
@@ -184,7 +197,7 @@ namespace WizepipesSocketServer
         }
 
 
-        public void SendData(byte[] cmd)
+        private void SendCmd(byte[] cmd)
         {
             try
             {

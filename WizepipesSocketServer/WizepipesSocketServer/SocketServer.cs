@@ -13,9 +13,7 @@ namespace WizepipesSocketServer
 {
     class SocketServer
     {
-        //TODO:心跳包（掉线重连）等需要for循环哈希表的函数放在server类里面，其余不需要哈希表的放在DataItem类里面;加一个字典<id,socket>,发送命令方便
-        
-
+             
         public static Hashtable htClient = new Hashtable();//strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
@@ -24,15 +22,14 @@ namespace WizepipesSocketServer
         /// TODO：做成函数：初始化服务器的输入参数，可以配置
         /// </summary>
         public int perPackageLength = 1009;//每包的长度
-        public int checkDataQueueTimeInterval = 100;  // 检查数据包队列时间休息间隔(ms)
+        public int checkRecDataQueueTimeInterval = 100;  // 检查数据包队列时间休息间隔(ms)
+        public int checkSendDataQueueTimeInterval = 1000;  // 检查数据包队列时间休息间隔(ms)
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
 
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);//处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
-        private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程
-
-        public Queue<byte[]> sendDataQueue = new Queue<byte[]>();//数据发送队列
+        private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
 
         public bool OpenServer(string ip, int port)
         {
@@ -168,14 +165,21 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.HandleData();
-                        
+                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
+                        {
+                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
+                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
+                            {
+                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex);
                 }
-                Thread.Sleep(checkDataQueueTimeInterval);//当前数据处理线程休眠一段时间
+                Thread.Sleep(checkRecDataQueueTimeInterval);//当前数据处理线程休眠一段时间
             }
             checkRecDataQueueResetEvent.Set();
         }
@@ -188,23 +192,16 @@ namespace WizepipesSocketServer
             {
                 try
                 {
-                    foreach (DictionaryEntry de in htSendCmd)
+                    foreach (DataItem dataItem in htClient.Values)
                     {
-                        if (htClient.ContainsKey(de.Key))//
-                        {
-                            Queue<byte[]> queueSendCmd = de.Value as Queue<byte[]>;
-                            DataItem dataitem = htClient[de.Key] as DataItem;//取出address对应的dataitem
-
-                        }
-
-
+                        dataItem.SendData();
                     }
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine(ex);
                 }
-                Thread.Sleep(checkDataQueueTimeInterval);//当前数据处理线程休眠一段时间
+                Thread.Sleep(checkSendDataQueueTimeInterval);//当前数据处理线程休眠一段时间
             }
             checkSendDataQueueResetEvent.Set();
         }
