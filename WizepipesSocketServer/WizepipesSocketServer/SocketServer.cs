@@ -23,7 +23,7 @@ namespace WizepipesSocketServer
         /// </summary>
         public int perPackageLength = 1009;//每包的长度
         public int checkRecDataQueueTimeInterval = 100;  // 检查数据包队列时间休息间隔(ms)
-        public int checkSendDataQueueTimeInterval = 1000;  // 检查数据包队列时间休息间隔(ms)
+        public int checkSendDataQueueTimeInterval = 200;  // 检查数据包队列时间休息间隔(ms)
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
@@ -81,6 +81,9 @@ namespace WizepipesSocketServer
                     dataItem.Init(clientSocket, perPackageLength, strAddress, 0, g_datafulllength);//初始化dataItem
 
                     htClient.Add(strAddress, dataItem);
+
+                    Console.WriteLine(DateTime.Now.ToString() + "收到客户端" + strAddress + "的连接请求" + "\n");
+
                     //开始从连接的socket异步接收数据
                     dataItem.socket.BeginReceive(dataItem.buffer, 0, dataItem.buffer.Length, SocketFlags.None, OnReceive, dataItem);
                 }
@@ -105,8 +108,14 @@ namespace WizepipesSocketServer
                 }
                 else if (dataItem.buffer[0] == 0xA5 && dataItem.buffer[1] == 0xA5 && dataItem.buffer[bytesRead - 2] == 0x5A && dataItem.buffer[bytesRead - 1] == 0x5A)//判断报文头和尾
                 {
+                    //test
+                    string str = byteToHexStr(dataItem.buffer);
+                    string strrec = str.Substring(0, bytesRead * 2);
+                    Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID + "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
+
                     if (dataItem.buffer[2] == 0xFF)
                     {
+                        dataItem.status.stage = Stage.idle;
                         if (dataItem.intDeviceID == 0) //只判断新地址的心跳包，避免重复检测
                         {
                             //设备的ID字符串
@@ -127,7 +136,12 @@ namespace WizepipesSocketServer
                             {
                                 //若存在，把旧地址的status数据属性复制到新地址上
                                 DataItem olddataItem = (DataItem) htClient[oldAddress]; //取出旧的dataitem
-                                dataItem.status = olddataItem.status;//更新进哈希表
+                                //更新进哈希表
+                                dataItem.status = olddataItem.status;
+                                dataItem.status.stage = Stage.idle;
+                                dataItem.recDataQueue = olddataItem.recDataQueue;
+                                dataItem.sendDataQueue = olddataItem.sendDataQueue;
+
                                 htClient.Remove(oldAddress); //删除旧地址的键值对
                             }
                         }
@@ -137,9 +151,6 @@ namespace WizepipesSocketServer
                     {
                         byte[] recData = new byte[bytesRead];
                         Array.Copy(dataItem.buffer, recData, bytesRead);
-
-                        Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "从地址为" +
-                                          dataItem.strAddress + "--收到数据" + byteToHexStr(recData) + "\r\n");
 
                         dataItem.recDataQueue.Enqueue(recData); //Enqueue 将对象添加到 Queue<T> 的结尾处
                     }
@@ -164,15 +175,7 @@ namespace WizepipesSocketServer
                 {
                     foreach (DataItem dataItem in htClient.Values)
                     {
-                        dataItem.HandleData();
-                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
-                        {
-                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
-                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
-                            {
-                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
-                            }
-                        }
+                        dataItem.HandleData();                        
                     }
                 }
                 catch (Exception ex)
@@ -195,6 +198,14 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
+                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
+                        {
+                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
+                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
+                            {
+                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -253,14 +264,17 @@ namespace WizepipesSocketServer
             return returnInt;
         }
 
+
         //test upload
         public void UploadData()
         {
+            byte[] CmdAD = new byte[] { 0xA5, 0xA5, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x06, 0x02, 0x57, 0x00, 0x00, 0x03, 0xE8, 0xFF, 0x5A, 0x5A };
             foreach (DataItem dataItem in htClient.Values)
             {
                 dataItem.status.IsSendDataToServer = true;
                 dataItem.status.currentsendbulk = 0;
                 dataItem.status.datalength = 0;
+                dataItem.sendDataQueue.Enqueue(CmdAD);
             }
         }
 
