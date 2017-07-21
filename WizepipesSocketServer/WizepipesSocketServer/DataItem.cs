@@ -37,8 +37,6 @@ namespace WizepipesSocketServer
         public Queue<byte[]> recDataQueue = new Queue<byte[]>();//数据接收队列
         public Queue<byte[]> sendDataQueue = new Queue<byte[]>();//数据发送队列
         private delegate void AsyncAnalyzeData(byte[] data);
-        //上传AD数据包--0x23
-        private byte[] CmdADPacket = new byte[] { 0xA5, 0xA5, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x06, 0x02, 0x57, 0x00, 0x00, 0x03, 0xE8, 0xFF, 0x5A, 0x5A };
 
         /// <summary>
         /// 初始化DataItem
@@ -147,8 +145,13 @@ namespace WizepipesSocketServer
                                     //置状态为上传完毕
                                     status.currentsendbulk = 0;
                                     status.IsSendDataToServer = false;
-                                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
+                                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress +
+                                          "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
                                     Console.WriteLine(msg);
+                                }
+                                else
+                                {
+                                    sendDataQueue.Enqueue(SetADcmd(status.currentsendbulk));//把AD命令加入发送队列
                                 }
                             }
                         }
@@ -220,11 +223,6 @@ namespace WizepipesSocketServer
                         break;
                 }
 
-                //把数据上传到服务器
-                if (status.IsSendDataToServer == true)
-                {
-                    sendDataQueue.Enqueue(SetADcmd(status.currentsendbulk));//把AD命令加入发送队列
-                }
             }
         }
 
@@ -280,7 +278,7 @@ namespace WizepipesSocketServer
         /// <returns>string</returns>
         private byte[] SetADcmd(int bulkCount)
         {
-            byte[] Cmd = CmdADPacket;
+            byte[] Cmd = { 0xA5, 0xA5, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x06, 0x02, 0x57, 0x00, 0x00, 0x03, 0xE8, 0xFF, 0x5A, 0x5A };
             byte[] bytesbulkCount = new byte[2];
             bytesbulkCount = intToBytes(bulkCount);
 
