@@ -7,17 +7,25 @@ using System.Text;
 
 namespace WizepipesSocketServer
 {
-    public enum Stage
+    public enum ClientStage
     {
         idle,//空闲
         offLine//离线
 
     };
 
+    public enum AdStage
+    {
+        Idle,//空闲
+        AdFinished,//采样完成
+        //AdUploaded//上传完成
+    };
+
     public struct Status
     {
         public bool IsSendDataToServer; //发送数据到服务器
-        public Stage stage;
+        public ClientStage clientStage;
+        public AdStage adStage;
         public int currentsendbulk; //当前发送的包数
         public int datalength;  //已保存的AD数据长度
         public byte[] byteAllData; //所有数据，算一个完整的数据
@@ -54,7 +62,7 @@ namespace WizepipesSocketServer
             intDeviceID = ID;
 
             status.IsSendDataToServer = false;
-            status.stage = 0;
+            status.clientStage = 0;
             status.currentsendbulk = 0;
             status.byteAllData = new byte[byteAllDataLength];
             status.HeartTime = DateTime.Now;
@@ -62,9 +70,9 @@ namespace WizepipesSocketServer
 
         public void HandleData()
         {
-            if (recDataQueue.Count > 0 && status.stage == Stage.idle)//命令已发送后，得到返回信息需要一段时间，再去解析数据
+            if (recDataQueue.Count > 0 && status.clientStage == ClientStage.idle)//命令已发送后，得到返回信息需要一段时间，再去解析数据
             {
-                byte[] datagramBytes = recDataQueue.Dequeue();//读取 Queue<T> 开始处的对象但不移除
+                byte[] datagramBytes = recDataQueue.Dequeue();//读取 Queue<T> 开始处的对象并移除
                 AsyncAnalyzeData method = new AsyncAnalyzeData(AnalyzeData);
                 method.BeginInvoke(datagramBytes, null, null);
             }
@@ -72,9 +80,9 @@ namespace WizepipesSocketServer
 
         public void SendData()
         {
-            if (sendDataQueue.Count > 0 && status.stage == Stage.idle)//没有待解析的命令，可以去发送命令
+            if (sendDataQueue.Count > 0 && status.clientStage == ClientStage.idle)//没有待解析的命令，可以去发送命令
             {
-                byte[] datagramBytes = sendDataQueue.Dequeue(); //读取 Queue<T> 开始处的对象但不移除
+                byte[] datagramBytes = sendDataQueue.Peek(); //读取 Queue<T> 开始处的对象但不移除
                 SendCmd(datagramBytes);
                 status.SendCmdNum = datagramBytes[2];//复制发送命令号
                 //status.stage = Stage.send;
@@ -114,19 +122,14 @@ namespace WizepipesSocketServer
                         break;
 
                     case 0x22:
-                        if (datagramBytes[9] == 0xAA)
-                        {
-                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                                  intDeviceID + "--AD采样开始" + "\n";
-                        }
-                        else if (datagramBytes[9] == 0x55)
+                        if (datagramBytes[9] == 0x55)
                         {
                             //dataitem.CmdStage = 1;
+                            status.adStage = AdStage.AdFinished;
                             msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                                   intDeviceID + "--AD采样结束" + "\n";
+                            Console.WriteLine(msg);
                         }
-                        Console.WriteLine(msg);
-                        //ShowMsg(msg);
                         break;
 
                     case 0x23:
@@ -149,6 +152,8 @@ namespace WizepipesSocketServer
                                     msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress +
                                           "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
                                     Console.WriteLine(msg);
+                                //status.adStage = AdStage.AdUploaded;
+                                    status.adStage = AdStage.Idle;//上传完成，置空闲位
                                 }
                                 else
                                 {
@@ -233,11 +238,15 @@ namespace WizepipesSocketServer
             try
             {
                 socket.BeginSend(cmd, 0, cmd.Length, SocketFlags.None, new AsyncCallback(OnSend), this);
+                sendDataQueue.Dequeue();//发送成功后移除,不保证单片机信息能成功返回到服务器
             }
             catch (Exception ex)
             {
+                //socket无效，发送命令失败
                 Console.WriteLine(ex);
                 CloseSocket();
+                status.clientStage = ClientStage.offLine;
+
             }
         }
 
@@ -274,14 +283,14 @@ namespace WizepipesSocketServer
 
         public void CheckTimeout(int maxSessionTimeout)
         {
-            if (status.stage != Stage.offLine)
+            if (status.clientStage != ClientStage.offLine)
             {
                 TimeSpan ts = DateTime.Now.Subtract(status.HeartTime);
                 int elapsedSecond = Math.Abs((int) ts.TotalSeconds);
 
                 if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
                 {
-                    status.stage = Stage.offLine;
+                    status.clientStage = ClientStage.offLine;
                     CloseSocket();
                 }
             }

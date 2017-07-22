@@ -13,7 +13,8 @@ namespace WizepipesSocketServer
 {
     class SocketServer
     {
-             
+        //TODO:下一步做配置文件；读取mysql数据库，把命令加入发送队列；使用log4net来记录日志。
+
         public static Hashtable htClient = new Hashtable();//strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
@@ -22,15 +23,18 @@ namespace WizepipesSocketServer
         /// TODO：做成函数：初始化服务器的输入参数，可以配置
         /// </summary>
         public int perPackageLength = 1009;//每包的长度
-        public int checkRecDataQueueTimeInterval = 100;  // 检查数据包队列时间休息间隔(ms)
-        public int checkSendDataQueueTimeInterval = 3000;  // 检查数据包队列时间休息间隔(ms)
+        public int checkRecDataQueueTimeInterval = 100;  // 检查接收数据包队列时间休息间隔(ms)
+        public int checkSendDataQueueTimeInterval = 3000;  // 检查发送命令队列时间休息间隔(ms)
+        public int checkDataBaseQueueTimeInterval = 10000;  // 检查发送命令队列时间休息间隔(ms)
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
         public int maxTimeOut = 120;//超时未响应时间--120s
+        public int maxBadClient = 3;//最大的故障设备数
 
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);//处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
+        private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
         public bool OpenServer(string ip, int port)
         {
@@ -52,6 +56,8 @@ namespace WizepipesSocketServer
                         return false;
                     //发送数据包处理线程
                     if (!ThreadPool.QueueUserWorkItem(CheckSendDataQueue))
+                        return false;
+                    if (!ThreadPool.QueueUserWorkItem(CheckDataBaseQueue))
                         return false;
 
                     return true;
@@ -140,7 +146,7 @@ namespace WizepipesSocketServer
 
                     if (dataItem.buffer[2] == 0xFF)
                     {
-                        dataItem.status.stage = Stage.idle;
+                        dataItem.status.clientStage = ClientStage.idle;
                         dataItem.status.HeartTime = DateTime.Now;
                         if (dataItem.intDeviceID == 0) //只判断新地址的心跳包，避免重复检测
                         {
@@ -164,7 +170,7 @@ namespace WizepipesSocketServer
                                 DataItem olddataItem = (DataItem) htClient[oldAddress]; //取出旧的dataitem
                                 //更新进哈希表
                                 dataItem.status = olddataItem.status;
-                                dataItem.status.stage = Stage.idle;
+                                dataItem.status.clientStage = ClientStage.idle;
                                 dataItem.recDataQueue = olddataItem.recDataQueue;
                                 dataItem.sendDataQueue = olddataItem.sendDataQueue;
 
@@ -186,12 +192,15 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
+                //客户端强制断开连接
+                dataItem.CloseSocket();
+                dataItem.status.clientStage = ClientStage.offLine;
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
             }
         }
 
-        //7-22 改为处理接收和发送队列
+        //7-22 处理接收队列
         private void CheckRecDataQueue(object state)
         {
             checkRecDataQueueResetEvent.Reset(); //Reset()将事件状态设置为非终止状态，导致线程阻止。
@@ -222,10 +231,21 @@ namespace WizepipesSocketServer
             {
                 try
                 {
+                    int AdFinishedClientNum = 0;
+                    //int AdUploadedClientNum = 0;
+
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
                         dataItem.CheckTimeout(maxTimeOut);
+                        if (dataItem.status.adStage == AdStage.AdFinished)
+                        {
+                            AdFinishedClientNum++;
+                        }
+                        //else if (dataItem.status.adStage == AdStage.AdUploaded)
+                        //{
+                            //AdUploadedClientNum++;
+                        //}
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
                         {
                             Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
@@ -236,7 +256,17 @@ namespace WizepipesSocketServer
                             htSendCmd.Remove(dataItem.intDeviceID);
                         }
                     }
-                    
+
+                    if (AdFinishedClientNum > htClient.Count - maxBadClient)
+                    {
+                        //开始上传
+                        UploadData();
+                    }
+                    //else if (AdUploadedClientNum > htClient.Count - maxBadClient)
+                    //{
+                        //上传完毕
+                    //}
+
                 }
                 catch (Exception ex)
                 {
@@ -248,7 +278,7 @@ namespace WizepipesSocketServer
         }
 
         //读取数据库命令线程
-        public void checkDB()
+        public void CheckDataBaseQueue(object state)
         {
             // TODO:读数据库
             // TODO:向htSendCmd中写入 id--命令队列
@@ -299,9 +329,7 @@ namespace WizepipesSocketServer
             }
             return returnInt;
         }
-
-        #region 面向winform操作
-          
+         
         //test upload
         public void UploadData()
         {
@@ -328,6 +356,5 @@ namespace WizepipesSocketServer
             //sendCmdQueue.Enqueue(cmd);
         }
 
-        #endregion
     }
 }

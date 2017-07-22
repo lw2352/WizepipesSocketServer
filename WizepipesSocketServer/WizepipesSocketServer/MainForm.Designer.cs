@@ -32,14 +32,13 @@
             this.buttonUpload = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label12 = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
             this.buttonCloseServer = new System.Windows.Forms.Button();
+            this.textBoxNextTime = new System.Windows.Forms.TextBox();
+            this.buttonCapNow = new System.Windows.Forms.Button();
             this.textBoxServerPort = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
             this.textBoxServerIP = new System.Windows.Forms.TextBox();
-            this.checkBoxAutoTest = new System.Windows.Forms.CheckBox();
-            this.label10 = new System.Windows.Forms.Label();
-            this.textBoxNextTime = new System.Windows.Forms.TextBox();
-            this.buttonCapNow = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -65,7 +64,6 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.checkBoxAutoTest);
             this.groupBox1.Controls.Add(this.label12);
             this.groupBox1.Controls.Add(this.label10);
             this.groupBox1.Controls.Add(this.buttonCloseServer);
@@ -93,6 +91,15 @@
             this.label12.TabIndex = 14;
             this.label12.Text = "服务器Port:";
             // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(169, 59);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(89, 12);
+            this.label10.TabIndex = 25;
+            this.label10.Text = "倒计时的时间：";
+            // 
             // buttonCloseServer
             // 
             this.buttonCloseServer.Location = new System.Drawing.Point(386, 20);
@@ -102,6 +109,24 @@
             this.buttonCloseServer.Text = "关闭";
             this.buttonCloseServer.UseVisualStyleBackColor = true;
             this.buttonCloseServer.Click += new System.EventHandler(this.buttonCloseServer_Click);
+            // 
+            // textBoxNextTime
+            // 
+            this.textBoxNextTime.Location = new System.Drawing.Point(264, 55);
+            this.textBoxNextTime.Name = "textBoxNextTime";
+            this.textBoxNextTime.Size = new System.Drawing.Size(31, 21);
+            this.textBoxNextTime.TabIndex = 24;
+            this.textBoxNextTime.Text = "5";
+            // 
+            // buttonCapNow
+            // 
+            this.buttonCapNow.Location = new System.Drawing.Point(331, 57);
+            this.buttonCapNow.Name = "buttonCapNow";
+            this.buttonCapNow.Size = new System.Drawing.Size(49, 23);
+            this.buttonCapNow.TabIndex = 23;
+            this.buttonCapNow.Text = "采样";
+            this.buttonCapNow.UseVisualStyleBackColor = true;
+            this.buttonCapNow.Click += new System.EventHandler(this.buttonCapNow_Click);
             // 
             // textBoxServerPort
             // 
@@ -128,43 +153,6 @@
             this.textBoxServerIP.TabIndex = 1;
             this.textBoxServerIP.Text = "192.168.3.83";
             // 
-            // checkBoxAutoTest
-            // 
-            this.checkBoxAutoTest.AutoSize = true;
-            this.checkBoxAutoTest.Location = new System.Drawing.Point(91, 57);
-            this.checkBoxAutoTest.Name = "checkBoxAutoTest";
-            this.checkBoxAutoTest.Size = new System.Drawing.Size(72, 16);
-            this.checkBoxAutoTest.TabIndex = 27;
-            this.checkBoxAutoTest.Text = "自动测试";
-            this.checkBoxAutoTest.UseVisualStyleBackColor = true;
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(169, 59);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(89, 12);
-            this.label10.TabIndex = 25;
-            this.label10.Text = "倒计时的时间：";
-            // 
-            // textBoxNextTime
-            // 
-            this.textBoxNextTime.Location = new System.Drawing.Point(264, 55);
-            this.textBoxNextTime.Name = "textBoxNextTime";
-            this.textBoxNextTime.Size = new System.Drawing.Size(31, 21);
-            this.textBoxNextTime.TabIndex = 24;
-            this.textBoxNextTime.Text = "5";
-            // 
-            // buttonCapNow
-            // 
-            this.buttonCapNow.Location = new System.Drawing.Point(331, 57);
-            this.buttonCapNow.Name = "buttonCapNow";
-            this.buttonCapNow.Size = new System.Drawing.Size(49, 23);
-            this.buttonCapNow.TabIndex = 23;
-            this.buttonCapNow.Text = "采样";
-            this.buttonCapNow.UseVisualStyleBackColor = true;
-            this.buttonCapNow.Click += new System.EventHandler(this.buttonCapNow_Click);
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -184,7 +172,6 @@
         private System.Windows.Forms.Button buttonOpenServer;
         private System.Windows.Forms.Button buttonUpload;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.CheckBox checkBoxAutoTest;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.TextBox textBoxNextTime;
         private System.Windows.Forms.Button buttonCapNow;
