@@ -23,6 +23,7 @@ namespace WizepipesSocketServer
         public int datalength;  //已保存的AD数据长度
         public byte[] byteAllData; //所有数据，算一个完整的数据
         public byte SendCmdNum;
+        public DateTime HeartTime;
     };
 
     class DataItem
@@ -34,7 +35,7 @@ namespace WizepipesSocketServer
 
         public Status status; //设备运行时的属性
 
-        public Queue<byte[]> recDataQueue = new Queue<byte[]>();//数据接收队列
+        public Queue<byte[]> recDataQueue = new Queue<byte[]>();//数据接收队列；queue是对象的先进先出集合
         public Queue<byte[]> sendDataQueue = new Queue<byte[]>();//数据发送队列
         private delegate void AsyncAnalyzeData(byte[] data);
 
@@ -57,6 +58,7 @@ namespace WizepipesSocketServer
             status.stage = 0;
             status.currentsendbulk = 0;
             status.byteAllData = new byte[byteAllDataLength];
+            status.HeartTime = DateTime.Now;
         }
 
         public void HandleData()
@@ -268,6 +270,21 @@ namespace WizepipesSocketServer
             {
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
+            }
+        }
+
+        public void CheckTimeout(int maxSessionTimeout)
+        {
+            if (status.stage != Stage.offLine)
+            {
+                TimeSpan ts = DateTime.Now.Subtract(status.HeartTime);
+                int elapsedSecond = Math.Abs((int) ts.TotalSeconds);
+
+                if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
+                {
+                    status.stage = Stage.offLine;
+                    CloseSocket();
+                }
             }
         }
 

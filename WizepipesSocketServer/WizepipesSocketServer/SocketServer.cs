@@ -23,10 +23,11 @@ namespace WizepipesSocketServer
         /// </summary>
         public int perPackageLength = 1009;//每包的长度
         public int checkRecDataQueueTimeInterval = 100;  // 检查数据包队列时间休息间隔(ms)
-        public int checkSendDataQueueTimeInterval = 200;  // 检查数据包队列时间休息间隔(ms)
+        public int checkSendDataQueueTimeInterval = 3000;  // 检查数据包队列时间休息间隔(ms)
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
+        public int maxTimeOut = 120;//超时未响应时间--120s
 
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);//处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
@@ -109,13 +110,14 @@ namespace WizepipesSocketServer
                 else if (dataItem.buffer[0] == 0xA5 && dataItem.buffer[1] == 0xA5 && dataItem.buffer[bytesRead - 2] == 0x5A && dataItem.buffer[bytesRead - 1] == 0x5A)//判断报文头和尾
                 {
                     //test
-                    string str = byteToHexStr(dataItem.buffer);
-                    string strrec = str.Substring(0, bytesRead * 2);
-                    Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID + "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
+                    //string str = byteToHexStr(dataItem.buffer);
+                    //string strrec = str.Substring(0, bytesRead * 2);
+                    //Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID + "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
 
                     if (dataItem.buffer[2] == 0xFF)
                     {
                         dataItem.status.stage = Stage.idle;
+                        dataItem.status.HeartTime = DateTime.Now;
                         if (dataItem.intDeviceID == 0) //只判断新地址的心跳包，避免重复检测
                         {
                             //设备的ID字符串
@@ -147,7 +149,7 @@ namespace WizepipesSocketServer
                         }
 
                     }
-                    else//心跳包之外的数据在DataItem里面处理
+                    else if(dataItem.intDeviceID != 0)//心跳包之外的数据在DataItem里面处理
                     {
                         byte[] recData = new byte[bytesRead];
                         Array.Copy(dataItem.buffer, recData, bytesRead);
@@ -165,7 +167,7 @@ namespace WizepipesSocketServer
             }
         }
 
-        //处理接收队列
+        //7-22 改为处理接收和发送队列
         private void CheckRecDataQueue(object state)
         {
             checkRecDataQueueResetEvent.Reset(); //Reset()将事件状态设置为非终止状态，导致线程阻止。
@@ -175,7 +177,18 @@ namespace WizepipesSocketServer
                 {
                     foreach (DataItem dataItem in htClient.Values)
                     {
-                        dataItem.HandleData();                        
+                        dataItem.SendData();
+                        dataItem.HandleData();
+                        dataItem.CheckTimeout(maxTimeOut);//TODO:放在慢速线程中做
+                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
+                        {
+                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
+                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
+                            {
+                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
+                            }
+                        }
+
                     }
                 }
                 catch (Exception ex)
@@ -187,7 +200,10 @@ namespace WizepipesSocketServer
             checkRecDataQueueResetEvent.Set();
         }
 
-        //处理发送队列
+        //private void CheckSendDataQueue(object state)
+        //TODO:判断是否超时，所有设备的状态
+
+        //7-22 TODO:改为专门读取数据库命令线程
         private void CheckSendDataQueue(object state)
         {
             checkSendDataQueueResetEvent.Reset(); //Reset()将事件状态设置为非终止状态，导致线程阻止。
@@ -195,18 +211,8 @@ namespace WizepipesSocketServer
             {
                 try
                 {
-                    foreach (DataItem dataItem in htClient.Values)
-                    {
-                        dataItem.SendData();
-                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
-                        {
-                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
-                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
-                            {
-                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
-                            }
-                        }
-                    }
+                    // TODO:读数据库
+                    // TODO:向htSendCmd中写入 id--命令队列
                 }
                 catch (Exception ex)
                 {
@@ -217,14 +223,14 @@ namespace WizepipesSocketServer
             checkSendDataQueueResetEvent.Set();
         }
 
+
         //检查哈希表中是否已存在当前ID
         public string checkIsHaveID(int id)
         {
-            foreach (DictionaryEntry de in htClient)
+            foreach (DataItem dataItem in htClient.Values)
             {
-                DataItem dataitem = (DataItem)de.Value;
-                if (dataitem.intDeviceID == id)//设备掉线后address(is key)改变而ID号不变
-                    return dataitem.strAddress;
+                if (dataItem.intDeviceID == id)//设备掉线后address(is key)改变而ID号不变
+                    return dataItem.strAddress;
             }
             return null;
         }       
@@ -264,6 +270,8 @@ namespace WizepipesSocketServer
             return returnInt;
         }
 
+        #region 面向winform操作
+          
         //test upload
         public void UploadData()
         {
@@ -277,7 +285,19 @@ namespace WizepipesSocketServer
             }
         }
 
-        
+        public void AddCmdToQueue(int id, byte[] cmd)
+        {
+            if (id == 0xFF)
+            {
+                foreach (DataItem dataItem in htClient.Values)
+                {
+                    dataItem.sendDataQueue.Enqueue(cmd);
+                }
+            }
+            //Queue<byte[]> sendCmdQueue = htSendCmd[id] as Queue<byte[]>;
+            //sendCmdQueue.Enqueue(cmd);
+        }
 
+        #endregion
     }
 }
