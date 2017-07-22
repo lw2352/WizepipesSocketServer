@@ -66,6 +66,30 @@ namespace WizepipesSocketServer
             }
         }
 
+        public void CloseServer()
+        {
+            try
+            {
+                IsServerOpen = false;
+                checkRecDataQueueResetEvent.WaitOne();
+                checkSendDataQueueResetEvent.WaitOne();
+                foreach (DataItem dataItem in htClient.Values)
+                {
+                    dataItem.CloseSocket();
+                }
+                ServerSocket.Close();
+                htClient.Clear();
+                htSendCmd.Clear();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                //throw;
+            }
+            
+        }
+
+
         private void OnAccept(IAsyncResult ar)
         {
             try
@@ -110,9 +134,9 @@ namespace WizepipesSocketServer
                 else if (dataItem.buffer[0] == 0xA5 && dataItem.buffer[1] == 0xA5 && dataItem.buffer[bytesRead - 2] == 0x5A && dataItem.buffer[bytesRead - 1] == 0x5A)//判断报文头和尾
                 {
                     //test
-                    //string str = byteToHexStr(dataItem.buffer);
-                    //string strrec = str.Substring(0, bytesRead * 2);
-                    //Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID + "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
+                    string str = byteToHexStr(dataItem.buffer);
+                    string strrec = str.Substring(0, bytesRead * 2);
+                    Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID + "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
 
                     if (dataItem.buffer[2] == 0xFF)
                     {
@@ -176,19 +200,8 @@ namespace WizepipesSocketServer
                 try
                 {
                     foreach (DataItem dataItem in htClient.Values)
-                    {
-                        dataItem.SendData();
-                        dataItem.HandleData();
-                        dataItem.CheckTimeout(maxTimeOut);//TODO:放在慢速线程中做
-                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
-                        {
-                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
-                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
-                            {
-                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
-                            }
-                        }
-
+                    {                        
+                        dataItem.HandleData();                                              
                     }
                 }
                 catch (Exception ex)
@@ -200,10 +213,8 @@ namespace WizepipesSocketServer
             checkRecDataQueueResetEvent.Set();
         }
 
-        //private void CheckSendDataQueue(object state)
-        //TODO:判断是否超时，所有设备的状态
 
-        //7-22 TODO:改为专门读取数据库命令线程
+        //发送队列里面的命令
         private void CheckSendDataQueue(object state)
         {
             checkSendDataQueueResetEvent.Reset(); //Reset()将事件状态设置为非终止状态，导致线程阻止。
@@ -211,8 +222,21 @@ namespace WizepipesSocketServer
             {
                 try
                 {
-                    // TODO:读数据库
-                    // TODO:向htSendCmd中写入 id--命令队列
+                    foreach (DataItem dataItem in htClient.Values)
+                    {
+                        dataItem.SendData();
+                        dataItem.CheckTimeout(maxTimeOut);
+                        if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
+                        {
+                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
+                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
+                            {
+                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
+                            }
+                            htSendCmd.Remove(dataItem.intDeviceID);
+                        }
+                    }
+                    
                 }
                 catch (Exception ex)
                 {
@@ -223,6 +247,12 @@ namespace WizepipesSocketServer
             checkSendDataQueueResetEvent.Set();
         }
 
+        //读取数据库命令线程
+        public void checkDB()
+        {
+            // TODO:读数据库
+            // TODO:向htSendCmd中写入 id--命令队列
+        }
 
         //检查哈希表中是否已存在当前ID
         public string checkIsHaveID(int id)

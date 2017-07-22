@@ -10,7 +10,6 @@ namespace WizepipesSocketServer
     public enum Stage
     {
         idle,//空闲
-        send,//已发送命令
         offLine//离线
 
     };
@@ -63,9 +62,9 @@ namespace WizepipesSocketServer
 
         public void HandleData()
         {
-            if (recDataQueue.Count > 0 && status.stage == Stage.send)//命令已发送后，得到返回信息需要一段时间，再去解析数据
+            if (recDataQueue.Count > 0 && status.stage == Stage.idle)//命令已发送后，得到返回信息需要一段时间，再去解析数据
             {
-                byte[] datagramBytes = recDataQueue.Peek();//读取 Queue<T> 开始处的对象但不移除
+                byte[] datagramBytes = recDataQueue.Dequeue();//读取 Queue<T> 开始处的对象但不移除
                 AsyncAnalyzeData method = new AsyncAnalyzeData(AnalyzeData);
                 method.BeginInvoke(datagramBytes, null, null);
             }
@@ -75,10 +74,10 @@ namespace WizepipesSocketServer
         {
             if (sendDataQueue.Count > 0 && status.stage == Stage.idle)//没有待解析的命令，可以去发送命令
             {
-                byte[] datagramBytes = sendDataQueue.Peek(); //读取 Queue<T> 开始处的对象但不移除
+                byte[] datagramBytes = sendDataQueue.Dequeue(); //读取 Queue<T> 开始处的对象但不移除
                 SendCmd(datagramBytes);
                 status.SendCmdNum = datagramBytes[2];//复制发送命令号
-                status.stage = Stage.send;
+                //status.stage = Stage.send;
                 Console.WriteLine(DateTime.Now + "向设备号是--"+intDeviceID+"--发送的命令号是"+ status.SendCmdNum.ToString("X2") + ";\n");
             }
         }
@@ -88,12 +87,12 @@ namespace WizepipesSocketServer
         {
             string msg = null;
 
-            if (datagramBytes[2] == status.SendCmdNum)
-            {
-                status.SendCmdNum = 0; //复位发送命令号
-                status.stage = Stage.idle;
-                sendDataQueue.Dequeue();
-                recDataQueue.Dequeue();
+            //if (datagramBytes[2] == status.SendCmdNum)
+            //{
+                //status.SendCmdNum = 0; //复位发送命令号
+                //status.stage = Stage.idle;
+                //sendDataQueue.Dequeue();
+                //recDataQueue.Dequeue();
 
                 switch (datagramBytes[2])
                 {
@@ -153,7 +152,7 @@ namespace WizepipesSocketServer
                                 }
                                 else
                                 {
-                                    sendDataQueue.Enqueue(SetADcmd(status.currentsendbulk));//把AD命令加入发送队列
+                                    SendCmd(SetADcmd(status.currentsendbulk));//没收满则继续发送AD命令
                                 }
                             }
                         }
@@ -225,7 +224,7 @@ namespace WizepipesSocketServer
                         break;
                 }
 
-            }
+            //}
         }
 
 

@@ -11,6 +11,8 @@ namespace WizepipesSocketServer
 {
     public partial class MainForm : Form
     {
+        //TODO:1.读取配置文件中的参数 2.做成windows服务 3.读取数据库命令
+
         SocketServer server = new SocketServer();
         public MainForm()
         {
@@ -42,6 +44,11 @@ namespace WizepipesSocketServer
                 cmd[10] = (byte)(DateTime.Now.Minute + NextTime - 60);
             }
             server.AddCmdToQueue(0xFF, cmd);
+        }
+
+        private void buttonCloseServer_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
