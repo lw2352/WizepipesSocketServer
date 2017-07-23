@@ -21,6 +21,7 @@ namespace WizepipesSocketServer
 
         private void button1_Click(object sender, EventArgs e)
         {
+            server.InitServer();
             server.OpenServer(textBoxServerIP.Text, Convert.ToInt32(textBoxServerPort.Text));
         }
 
