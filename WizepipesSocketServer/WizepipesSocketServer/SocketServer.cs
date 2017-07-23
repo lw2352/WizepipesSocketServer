@@ -13,15 +13,13 @@ namespace WizepipesSocketServer
 {
     class SocketServer
     {
-        //TODO:下一步做配置文件；读取mysql数据库，把命令加入发送队列；使用log4net来记录日志。
+        //TODO:使用log4net来记录日志。
 
         public static Hashtable htClient = new Hashtable();//strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
+        public static CmdItem cmdItem = new CmdItem();//实例化
 
-        /// <summary>
-        /// TODO：做成函数：初始化服务器的输入参数，可以配置
-        /// </summary>
         public int perPackageLength = 1009;//每包的长度
         public int checkRecDataQueueTimeInterval = 100;  // 检查接收数据包队列时间休息间隔(ms)
         public int checkSendDataQueueTimeInterval = 3000;  // 检查发送命令队列时间休息间隔(ms)
@@ -36,8 +34,18 @@ namespace WizepipesSocketServer
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
+        //初始化服务器，给服务参数赋值
+        public void InitServer()
+        {
+            string ConfigIp = System.Configuration.ConfigurationManager.AppSettings["ServerIP"];
+            Console.WriteLine("从config文件读取的IP为：" + ConfigIp);
+            string DB = System.Configuration.ConfigurationManager.AppSettings["ServerDB"];
+            MySQLDB.strDbConn = DB;
+        }
+
         public bool OpenServer(string ip, int port)
         {
+
             try
             {
                 if (IsServerOpen == true)
@@ -114,6 +122,9 @@ namespace WizepipesSocketServer
                     htClient.Add(strAddress, dataItem);
 
                     Console.WriteLine(DateTime.Now.ToString() + "收到客户端" + strAddress + "的连接请求" + "\n");
+
+                    //test
+                    NetDB.addsensorinfo(7, strAddress, strAddress, DateTime.Now.ToString(), 1);
 
                     //开始从连接的socket异步接收数据
                     dataItem.socket.BeginReceive(dataItem.buffer, 0, dataItem.buffer.Length, SocketFlags.None, OnReceive, dataItem);
@@ -262,10 +273,6 @@ namespace WizepipesSocketServer
                         //开始上传
                         UploadData();
                     }
-                    //else if (AdUploadedClientNum > htClient.Count - maxBadClient)
-                    //{
-                        //上传完毕
-                    //}
 
                 }
                 catch (Exception ex)
@@ -330,10 +337,9 @@ namespace WizepipesSocketServer
             return returnInt;
         }
          
-        //test upload
         public void UploadData()
         {
-            byte[] CmdAD = { 0xA5, 0xA5, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x06, 0x02, 0x57, 0x00, 0x00, 0x03, 0xE8, 0xFF, 0x5A, 0x5A };
+            byte[] CmdAD = cmdItem.CmdADPacket;
             foreach (DataItem dataItem in htClient.Values)
             {
                 dataItem.status.IsSendDataToServer = true;
@@ -343,6 +349,7 @@ namespace WizepipesSocketServer
             }
         }
 
+        //test for set capTime
         public void AddCmdToQueue(int id, byte[] cmd)
         {
             if (id == 0xFF)
