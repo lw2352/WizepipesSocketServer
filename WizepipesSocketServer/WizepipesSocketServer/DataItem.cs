@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-[assembly: log4net.Config.XmlConfigurator(Watch = true)]
+// [assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
 namespace WizepipesSocketServer
 {
@@ -92,7 +92,7 @@ namespace WizepipesSocketServer
         public void AnalyzeData(byte[] datagramBytes)
         {
             string msg = null;
-
+            //TODO;对应地写入数据库做记录
             switch (datagramBytes[2])
             {
                 case 0x21:
@@ -271,6 +271,7 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
+                DebugLog.Debug(ex);
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
             }
