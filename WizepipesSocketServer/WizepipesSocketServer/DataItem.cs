@@ -18,7 +18,7 @@ namespace WizepipesSocketServer
     {
         Idle,//空闲
         AdFinished,//采样完成
-        //AdUploaded//上传完成
+        AdUploading//正在上传
     };
 
     public struct Status
@@ -29,7 +29,6 @@ namespace WizepipesSocketServer
         public int currentsendbulk; //当前发送的包数
         public int datalength;  //已保存的AD数据长度
         public byte[] byteAllData; //所有数据，算一个完整的数据
-        public byte SendCmdNum;
         public DateTime HeartTime;
     };
 
@@ -39,7 +38,6 @@ namespace WizepipesSocketServer
         public byte[] buffer;
         public string strAddress;
         public int intDeviceID;    //转化为int后的ID       
-
         public Status status; //设备运行时的属性
 
         public Queue<byte[]> recDataQueue = new Queue<byte[]>();//数据接收队列；queue是对象的先进先出集合
@@ -82,11 +80,8 @@ namespace WizepipesSocketServer
         {
             if (sendDataQueue.Count > 0 && status.clientStage == ClientStage.idle)//没有待解析的命令，可以去发送命令
             {
-                byte[] datagramBytes = sendDataQueue.Peek(); //读取 Queue<T> 开始处的对象但不移除
-                SendCmd(datagramBytes);
-                status.SendCmdNum = datagramBytes[2];//复制发送命令号
-                //status.stage = Stage.send;
-                Console.WriteLine(DateTime.Now + "向设备号是--"+intDeviceID+"--发送的命令号是"+ status.SendCmdNum.ToString("X2") + ";\n");
+                byte[] datagramBytes = sendDataQueue.Dequeue(); //读取 Queue<T> 开始处的对象并移除
+                SendCmd(datagramBytes);                
             }
         }
 
@@ -95,141 +90,138 @@ namespace WizepipesSocketServer
         {
             string msg = null;
 
-            //if (datagramBytes[2] == status.SendCmdNum)
-            //{
-                //status.SendCmdNum = 0; //复位发送命令号
-                //status.stage = Stage.idle;
-                //sendDataQueue.Dequeue();
-                //recDataQueue.Dequeue();
+            switch (datagramBytes[2])
+            {
+                case 0x21:
+                    if (datagramBytes[7] == 0x00)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                              intDeviceID + "--读取开启时长和关闭时长成功" + "\n";
+                        Console.WriteLine(msg);
+                        //ShowMsg(msg);
+                    }
+                    if (datagramBytes[7] == 0x01)
+                    {
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                              intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
+                        Console.WriteLine(msg);
+                        //ShowMsg(msg);
+                    }
+                    break;
 
-                switch (datagramBytes[2])
-                {
-                    case 0x21:
-                        if (datagramBytes[7] == 0x00)
-                        {
-                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                                  intDeviceID + "--读取开启时长和关闭时长成功" + "\n";
-                            Console.WriteLine(msg);
-                            //ShowMsg(msg);
-                        }
-                        if (datagramBytes[7] == 0x01)
-                        {
-                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                                  intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
-                            Console.WriteLine(msg);
-                            //ShowMsg(msg);
-                        }
-                        break;
+                case 0x22:
+                    if (datagramBytes[9] == 0x55)
+                    {
+                        //dataitem.CmdStage = 1;
+                        status.adStage = AdStage.AdFinished;
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                              intDeviceID + "--AD采样结束" + "\n";
+                        Console.WriteLine(msg);
+                    }
+                    break;
 
-                    case 0x22:
-                        if (datagramBytes[9] == 0x55)
+                case 0x23:
+                    if (datagramBytes.Length >= 1007)
+                    {
+                        if (status.IsSendDataToServer == true)
                         {
-                            //dataitem.CmdStage = 1;
-                            status.adStage = AdStage.AdFinished;
-                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                                  intDeviceID + "--AD采样结束" + "\n";
-                            Console.WriteLine(msg);
-                        }
-                        break;
+                            status.currentsendbulk++;
+                            Console.WriteLine("设备号--" + intDeviceID + "第" + status.currentsendbulk + "包\r\n");
+                            // copy data to dataItem
+                            Array.Copy(datagramBytes, 7, status.byteAllData, status.datalength, 1000);
+                            status.datalength += 1000;
 
-                    case 0x23:
-                        if (datagramBytes.Length >= 1007)
-                        {
-                            if (status.IsSendDataToServer == true)
+                            if (status.currentsendbulk == 600)
                             {
-                                status.currentsendbulk++;
-                                Console.WriteLine("设备号--" + intDeviceID + "第" + status.currentsendbulk + "包\r\n");
-                                // copy data to dataItem
-                                Array.Copy(datagramBytes, 7, status.byteAllData, status.datalength, 1000);
-                                status.datalength += 1000;
-
-                                if (status.currentsendbulk == 600)
-                                {
-                                    StoreDataToFile(intDeviceID, status.byteAllData);
-                                    //置状态为上传完毕
-                                    status.currentsendbulk = 0;
-                                    status.IsSendDataToServer = false;
-                                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress +
-                                          "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
-                                    Console.WriteLine(msg);
-                                //status.adStage = AdStage.AdUploaded;
-                                    status.adStage = AdStage.Idle;//上传完成，置空闲位
-                                }
-                                else
-                                {
-                                    SendCmd(SetADcmd(status.currentsendbulk));//没收满则继续发送AD命令
-                                }
+                                StoreDataToFile(intDeviceID, status.byteAllData);
+                                //置状态为上传完毕
+                                status.currentsendbulk = 0;
+                                status.IsSendDataToServer = false;
+                                msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress +
+                                      "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
+                                Console.WriteLine(msg);
+                                status.adStage = AdStage.Idle;//上传完成，置空闲位
                             }
                         }
-                        break;
+                    }
+                    break;
 
-                    case 0x25:
-                        if (datagramBytes[9] == 0x55)
-                        {
-                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                                  intDeviceID + "--设定GPS采样时间成功" + "\n";
-                            Console.WriteLine(msg);
-                            //ShowMsg(msg);
-                        }
-
-                        break;
-
-                    case 0x26:
-                        if (datagramBytes[7] == 0x01)
-                        {
-                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                                  intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
-                            Console.WriteLine(msg);
-                            // ShowMsg(msg);
-                        }
-                        break;
-
-                    case 0x27:
-                        int[] gpsData = new int[23];
-                        for (int i = 0; i < 23; i++)
-                        {
-                            //gpsData[i] = dataitem.SingleBuffer[9 + i];
-                        }
-                        //gpsDistance.getGPSData(gpsData, out dataitem.Latitude, out dataitem.Longitude);
-                        //msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--经度为：" + dataitem.Longitude + "纬度为：" + dataitem.Latitude + "\n";
-                        Console.WriteLine(msg);
-                        //ShowMsg(msg);
-                        break;
-
-                    case 0x29:
+                case 0x25:
+                    if (datagramBytes[9] == 0x55)
+                    {
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                              intDeviceID + "--设定服务器IP成功" + "\n";
+                              intDeviceID + "--设定GPS采样时间成功" + "\n";
                         Console.WriteLine(msg);
                         //ShowMsg(msg);
-                        break;
+                    }
 
-                    case 0x30:
+                    break;
+
+                case 0x26:
+                    if (datagramBytes[7] == 0x01)
+                    {
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                              intDeviceID + "--设定服务器端口号成功" + "\n";
+                              intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
                         Console.WriteLine(msg);
-                        //ShowMsg(msg);
-                        break;
+                        // ShowMsg(msg);
+                    }
+                    break;
 
-                    case 0x31:
-                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                              intDeviceID + "--设定AP名称成功" + "\n";
-                        Console.WriteLine(msg);
-                        //ShowMsg(msg);
-                        break;
+                case 0x27:
+                    int[] gpsData = new int[23];
+                    for (int i = 0; i < 23; i++)
+                    {
+                        //gpsData[i] = dataitem.SingleBuffer[9 + i];
+                    }
+                    //gpsDistance.getGPSData(gpsData, out dataitem.Latitude, out dataitem.Longitude);
+                    //msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--经度为：" + dataitem.Longitude + "纬度为：" + dataitem.Latitude + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
 
-                    case 0x32:
-                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
-                              intDeviceID + "--设定AP密码成功" + "\n";
-                        Console.WriteLine(msg);
-                        //ShowMsg(msg);
-                        break;
-                 
-                    default:
-                        Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "收到其他类型数据\r\n");
-                        break;
-                }
+                case 0x29:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                          intDeviceID + "--设定服务器IP成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
 
-            //}
+                case 0x30:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                          intDeviceID + "--设定服务器端口号成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x31:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                          intDeviceID + "--设定AP名称成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0x32:
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                          intDeviceID + "--设定AP密码成功" + "\n";
+                    Console.WriteLine(msg);
+                    //ShowMsg(msg);
+                    break;
+
+                case 0xFF:
+                    status.clientStage = ClientStage.idle;
+                    status.HeartTime = DateTime.Now;
+                    Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") +"设备号--" +
+                        intDeviceID + "收到心跳包\r\n");
+                    break;
+                default:
+                    Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "收到其他类型数据\r\n");
+                    break;
+            }
+
+            if (status.IsSendDataToServer == true)
+            {
+                SendCmd(SetADcmd(status.currentsendbulk));//继续发送AD命令
+            }
         }
 
 
@@ -238,7 +230,7 @@ namespace WizepipesSocketServer
             try
             {
                 socket.BeginSend(cmd, 0, cmd.Length, SocketFlags.None, new AsyncCallback(OnSend), this);
-                sendDataQueue.Dequeue();//发送成功后移除,不保证单片机信息能成功返回到服务器
+                Console.WriteLine(DateTime.Now + "向设备号是--" + intDeviceID + "--发送的命令号是" + byteToHexStr(cmd) + ";\n");
             }
             catch (Exception ex)
             {
@@ -259,7 +251,6 @@ namespace WizepipesSocketServer
             try
             {
                 socket.EndSend(ar);
-                ar.AsyncWaitHandle.Close();
             }
             catch (Exception ex)
             {
@@ -286,7 +277,7 @@ namespace WizepipesSocketServer
             if (status.clientStage != ClientStage.offLine)
             {
                 TimeSpan ts = DateTime.Now.Subtract(status.HeartTime);
-                int elapsedSecond = Math.Abs((int) ts.TotalSeconds);
+                int elapsedSecond = Math.Abs((int)ts.TotalSeconds);
 
                 if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
                 {
@@ -356,6 +347,20 @@ namespace WizepipesSocketServer
                 F.Flush();
                 F.Close();
             }
+        }
+
+        // 字节数组转16进制字符串 
+        private static string byteToHexStr(byte[] bytes)
+        {
+            string returnStr = "";
+            if (bytes != null)
+            {
+                for (long i = 0; i < bytes.Length; i++)
+                {
+                    returnStr += bytes[i].ToString("X2");
+                }
+            }
+            return returnStr;
         }
 
     }

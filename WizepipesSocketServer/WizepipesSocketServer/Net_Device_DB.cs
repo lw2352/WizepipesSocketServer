@@ -6,7 +6,7 @@ using MySql.Data.MySqlClient;
 
 namespace WizepipesSocketServer
 {
-    public class NetDB
+    public class NetDb
     {
         public static string addsensorinfo(int sensorintdeviceID, string sensorIP, string sensorPort,
             string sensorloginTime, int sensorStatus)

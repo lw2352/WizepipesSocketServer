@@ -134,7 +134,7 @@
             this.textBoxServerPort.Name = "textBoxServerPort";
             this.textBoxServerPort.Size = new System.Drawing.Size(40, 21);
             this.textBoxServerPort.TabIndex = 12;
-            this.textBoxServerPort.Text = "8080";
+            this.textBoxServerPort.Text = "8085";
             // 
             // label11
             // 

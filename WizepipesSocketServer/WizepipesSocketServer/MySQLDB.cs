@@ -22,7 +22,7 @@ public class  MySQLDB
     public static string strDbConn
     {
         get { return m_strConn; }
-        set { m_strConn = strDbConn; }
+        set { m_strConn = value; }
     }
 
     public static void InitDb()
