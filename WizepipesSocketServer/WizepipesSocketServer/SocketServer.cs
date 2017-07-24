@@ -7,14 +7,14 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-
+//[assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
 namespace WizepipesSocketServer
 {
     class SocketServer
     {
         //TODO:使用log4net来记录日志。
-
+        public static log4net.ILog DebugLog = log4net.LogManager.GetLogger(typeof(SocketServer));
         public static Hashtable htClient = new Hashtable();//strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
@@ -74,6 +74,7 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
+                DebugLog.Debug(ex);
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
                 return false;
@@ -96,10 +97,10 @@ namespace WizepipesSocketServer
                 htSendCmd.Clear();
                 //TODO:GC
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine(e);
-                //throw;
+                Console.WriteLine(ex);
+                DebugLog.Debug(ex);
             }
             
         }
@@ -130,6 +131,7 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
+                DebugLog.Debug(ex);
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
             }
@@ -203,7 +205,7 @@ namespace WizepipesSocketServer
             catch (Exception ex)
             {
                 //客户端强制断开连接
-                dataItem.CloseSocket();
+                DebugLog.Debug(ex);
                 dataItem.status.clientStage = ClientStage.offLine;
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);

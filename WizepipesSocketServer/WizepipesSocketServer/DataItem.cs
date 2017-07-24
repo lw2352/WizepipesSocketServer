@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+[assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
 namespace WizepipesSocketServer
 {
@@ -34,6 +35,8 @@ namespace WizepipesSocketServer
 
     class DataItem
     {
+        public static log4net.ILog DebugLog = log4net.LogManager.GetLogger(typeof(SocketServer));
+
         public Socket socket;
         public byte[] buffer;
         public string strAddress;
@@ -236,9 +239,9 @@ namespace WizepipesSocketServer
             {
                 //socket无效，发送命令失败
                 Console.WriteLine(ex);
-                CloseSocket();
+                //CloseSocket();
                 status.clientStage = ClientStage.offLine;
-
+                DebugLog.Debug(ex);
             }
         }
 
@@ -254,6 +257,7 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
+                DebugLog.Debug(ex);
                 Console.WriteLine(ex);
             }
         }
