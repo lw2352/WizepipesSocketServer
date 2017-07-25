@@ -300,11 +300,14 @@ namespace WizepipesSocketServer
                         Console.WriteLine("开始上传");
                         UploadData();
                     }
-                    if (AdStoredClinetNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
+                    if (IsAutoTest == true)
                     {
-                        //开始上传
-                        Console.WriteLine("存储完毕，重设时间");
-                        SetCapTime(5);
+                        if (AdStoredClinetNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
+                        {
+                            //开始上传
+                            Console.WriteLine("存储完毕，重设时间");
+                            SetCapTime(5);
+                        }
                     }
 
                 }
@@ -458,7 +461,7 @@ namespace WizepipesSocketServer
             string msg = null;
             foreach (DataItem dataItem in htClient.Values)
             {
-                msg = "地址为:"+dataItem.strAddress + "-ID号为:"+dataItem.intDeviceID + "-当前包数为:"+dataItem.status.currentsendbulk +
+                msg += "地址为:"+dataItem.strAddress + "-ID号为:"+dataItem.intDeviceID + "-当前包数为:"+dataItem.status.currentsendbulk +
                       "-HeartTime为:"+dataItem.status.HeartTime+";\r\n";
             }
             return msg;
