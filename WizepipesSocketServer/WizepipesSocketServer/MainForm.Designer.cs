@@ -39,6 +39,9 @@
             this.textBoxServerPort = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
             this.textBoxServerIP = new System.Windows.Forms.TextBox();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.buttonViewClientInfo = new System.Windows.Forms.Button();
+            this.buttonClear = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -64,6 +67,9 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.buttonClear);
+            this.groupBox1.Controls.Add(this.buttonViewClientInfo);
+            this.groupBox1.Controls.Add(this.richTextBox1);
             this.groupBox1.Controls.Add(this.label12);
             this.groupBox1.Controls.Add(this.label10);
             this.groupBox1.Controls.Add(this.buttonCloseServer);
@@ -77,7 +83,7 @@
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(449, 234);
+            this.groupBox1.Size = new System.Drawing.Size(441, 487);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "服务器配置";
@@ -153,11 +159,39 @@
             this.textBoxServerIP.TabIndex = 1;
             this.textBoxServerIP.Text = "192.168.3.83";
             // 
+            // richTextBox1
+            // 
+            this.richTextBox1.Location = new System.Drawing.Point(12, 111);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.Size = new System.Drawing.Size(423, 370);
+            this.richTextBox1.TabIndex = 26;
+            this.richTextBox1.Text = "";
+            // 
+            // buttonViewClientInfo
+            // 
+            this.buttonViewClientInfo.Location = new System.Drawing.Point(13, 82);
+            this.buttonViewClientInfo.Name = "buttonViewClientInfo";
+            this.buttonViewClientInfo.Size = new System.Drawing.Size(95, 23);
+            this.buttonViewClientInfo.TabIndex = 27;
+            this.buttonViewClientInfo.Text = "查询设备信息";
+            this.buttonViewClientInfo.UseVisualStyleBackColor = true;
+            this.buttonViewClientInfo.Click += new System.EventHandler(this.buttonViewClientInfo_Click);
+            // 
+            // buttonClear
+            // 
+            this.buttonClear.Location = new System.Drawing.Point(132, 82);
+            this.buttonClear.Name = "buttonClear";
+            this.buttonClear.Size = new System.Drawing.Size(52, 23);
+            this.buttonClear.TabIndex = 28;
+            this.buttonClear.Text = "Clear";
+            this.buttonClear.UseVisualStyleBackColor = true;
+            this.buttonClear.Click += new System.EventHandler(this.buttonClear_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(449, 234);
+            this.ClientSize = new System.Drawing.Size(441, 487);
             this.Controls.Add(this.groupBox1);
             this.Name = "MainForm";
             this.Text = "漏水采集平台";
@@ -180,6 +214,9 @@
         private System.Windows.Forms.Button buttonCloseServer;
         private System.Windows.Forms.TextBox textBoxServerPort;
         private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Button buttonViewClientInfo;
+        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.Button buttonClear;
     }
 }
 

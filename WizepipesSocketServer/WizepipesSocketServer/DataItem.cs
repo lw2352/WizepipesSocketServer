@@ -19,7 +19,8 @@ namespace WizepipesSocketServer
     {
         Idle,//空闲
         AdFinished,//采样完成
-        AdUploading//正在上传
+        AdUploading,//正在上传
+        AdStored
     };
 
     public struct Status
@@ -143,7 +144,7 @@ namespace WizepipesSocketServer
                                 msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress +
                                       "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
                                 Console.WriteLine(msg);
-                                status.adStage = AdStage.Idle;//上传完成，置空闲位
+                                status.adStage = AdStage.AdStored;//上传完成，置空闲位
                             }
                         }
                     }

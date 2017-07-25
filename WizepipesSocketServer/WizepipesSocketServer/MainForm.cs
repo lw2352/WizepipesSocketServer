@@ -33,24 +33,24 @@ namespace WizepipesSocketServer
 
         private void buttonCapNow_Click(object sender, EventArgs e)
         {
-            byte[] cmd = new byte[] { 0xA5, 0xA5, 0x25, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x04, 0x0A, 0x1E, 0x00, 0x00, 0xFF, 0x5A, 0x5A };
             int NextTime = Convert.ToInt32(textBoxNextTime.Text);
-            if (DateTime.Now.Minute + NextTime <= 59)
-            {
-                cmd[9] = (byte)DateTime.Now.Hour;
-                cmd[10] = (byte)(DateTime.Now.Minute + NextTime);//当前时刻加5分钟
-            }
-            else
-            { //分钟数大于60
-                cmd[9] = (byte)(DateTime.Now.Hour + 1);
-                cmd[10] = (byte)(DateTime.Now.Minute + NextTime - 60);
-            }
-            server.AddCmdToQueue(0xFF, cmd);
+
+            server.SetCapTime(NextTime);
         }
 
         private void buttonCloseServer_Click(object sender, EventArgs e)
         {
+            server.CloseServer();
+        }
 
+        private void buttonViewClientInfo_Click(object sender, EventArgs e)
+        {
+            richTextBox1.AppendText(server.ViewClientInfo());
+        }
+
+        private void buttonClear_Click(object sender, EventArgs e)
+        {
+            richTextBox1.Clear();
         }
     }
 }
