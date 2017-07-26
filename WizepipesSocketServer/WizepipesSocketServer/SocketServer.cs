@@ -202,6 +202,7 @@ namespace WizepipesSocketServer
                                 dataItem.intDeviceID = intdeviceID;
                                 dataItem.status = olddataItem.status;
                                 dataItem.status.clientStage = ClientStage.idle;
+                                dataItem.status.HeartTime = DateTime.Now;
                                 dataItem.recDataQueue = olddataItem.recDataQueue;
                                 dataItem.sendDataQueue = olddataItem.sendDataQueue;
 
@@ -266,7 +267,7 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
-                        //dataItem.CheckTimeout(maxTimeOut);(设备掉线后判断有bug)
+                        dataItem.CheckTimeout(maxTimeOut);//(设备掉线后判断有bug)
                         if (dataItem.status.adStage == AdStage.AdFinished)
                         {
                             AdFinishedClientNum++;

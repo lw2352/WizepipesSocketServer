@@ -241,7 +241,7 @@ namespace WizepipesSocketServer
             {
                 //socket无效，发送命令失败
                 Console.WriteLine(ex);
-                //CloseSocket();
+                CloseSocket();
                 status.clientStage = ClientStage.offLine;
                 DebugLog.Debug(ex);
             }
