@@ -395,6 +395,45 @@ namespace WizepipesSocketServer
             }
         }
 
+        //add 7-26
+        //命令发送成功后把CmdNumHex置1
+        public static string UpdateSensorCfg(int sensorintdeviceID, int cmdNumHex)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL =
+                "Update tsensorcfg SET CmdNumHex=?sensorCmdNumHex WHERE intdeviceID=?sensorintdeviceID";
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorCmdNumHex", MySqlDbType.Int32),
+            };
+            parmss[0].Value = sensorintdeviceID;
+            parmss[1].Value = cmdNumHex;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
         //创建新表 add 3-17
         //"创建新表")]
         public static string creatNewTable(string childName)

@@ -20,7 +20,7 @@ namespace WizepipesSocketServer
         Idle,//空闲
         AdFinished,//采样完成
         AdUploading,//正在上传
-        AdStored
+        AdStored//保存成功
     };
 
     public struct Status
@@ -157,6 +157,7 @@ namespace WizepipesSocketServer
                               intDeviceID + "--设定GPS采样时间成功" + "\n";
                         Console.WriteLine(msg);
                         //ShowMsg(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, 1);
                     }
 
                     break;
@@ -342,6 +343,7 @@ namespace WizepipesSocketServer
                 F.Write(fileStartAndEnd, 1, 1);
                 F.Flush();
                 F.Close();
+                NetDb.addsensorad(intDeviceID, DateTime.Now.ToString(), path);
             }
             else
             {
@@ -352,6 +354,7 @@ namespace WizepipesSocketServer
                 F.Write(fileStartAndEnd, 1, 1);
                 F.Flush();
                 F.Close();
+                NetDb.addsensorad(intDeviceID, DateTime.Now.ToString(), path);
             }
         }
 

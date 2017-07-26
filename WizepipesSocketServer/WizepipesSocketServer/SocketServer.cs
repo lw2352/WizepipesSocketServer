@@ -27,9 +27,9 @@ namespace WizepipesSocketServer
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
-        public int maxTimeOut = 240;//超时未响应时间--120s
+        public int maxTimeOut = 180;//超时未响应时间--3min
         public int maxBadClient = 1;//最大的故障设备数
-        public bool IsAutoTest = true;
+        public bool IsAutoTest = false;
 
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);//处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
@@ -149,83 +149,76 @@ namespace WizepipesSocketServer
                 strAddress = clientSocket.RemoteEndPoint.ToString();
 
                 DataItem dataItem = (DataItem)htClient[strAddress];//取出address对应的dataitem
-                //if (clientSocket.Connected) //检测socket上一次的状态
-                //{
-                    bytesRead = clientSocket.EndReceive(ar); //接收到的数据长度
 
-                    if (bytesRead == 0)
+                bytesRead = clientSocket.EndReceive(ar); //接收到的数据长度
+
+                if (bytesRead == 0)
+                {
+                    Console.WriteLine("设备断开连接");
+                    dataItem.status.clientStage = ClientStage.offLine;
+                    dataItem.CloseSocket(); //关闭socket
+                }
+                else if (dataItem.buffer[0] == 0xA5 && dataItem.buffer[1] == 0xA5 &&
+                         dataItem.buffer[bytesRead - 2] == 0x5A && dataItem.buffer[bytesRead - 1] == 0x5A) //判断报文头和尾
+                {
+                    //test
+                    string str = byteToHexStr(dataItem.buffer);
+                    string strrec = str.Substring(0, bytesRead * 2);
+                    Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID +
+                                      "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
+
+                    byte[] recData = new byte[bytesRead];
+                    Array.Copy(dataItem.buffer, recData, bytesRead);
+                    dataItem.recDataQueue.Enqueue(recData); //Enqueue 将对象添加到 Queue<T> 的结尾处
+                    recData = null;
+
+                    if (dataItem.buffer[2] == 0xFF)
                     {
-                        Console.WriteLine("设备断开连接");
-                        dataItem.status.clientStage = ClientStage.offLine;
-                        dataItem.CloseSocket(); //关闭socket
-                    }
-                    else if (dataItem.buffer[0] == 0xA5 && dataItem.buffer[1] == 0xA5 &&
-                             dataItem.buffer[bytesRead - 2] == 0x5A && dataItem.buffer[bytesRead - 1] == 0x5A) //判断报文头和尾
-                    {
-                        //test
-                        string str = byteToHexStr(dataItem.buffer);
-                        string strrec = str.Substring(0, bytesRead * 2);
-                        Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID +
-                                          "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
-
-                        byte[] recData = new byte[bytesRead];
-                        Array.Copy(dataItem.buffer, recData, bytesRead);
-                        dataItem.recDataQueue.Enqueue(recData); //Enqueue 将对象添加到 Queue<T> 的结尾处
-                        recData = null;
-
-                        if (dataItem.buffer[2] == 0xFF)
+                        if (dataItem.intDeviceID == 0) //只判断新地址的心跳包，避免重复检测
                         {
-                            if (dataItem.intDeviceID == 0) //只判断新地址的心跳包，避免重复检测
+                            //设备的ID字符串
+                            ID[0] = dataItem.buffer[3];
+                            ID[1] = dataItem.buffer[4];
+                            ID[2] = dataItem.buffer[5];
+                            ID[3] = dataItem.buffer[6];
+                            int intdeviceID = byteToInt(ID);
+
+                            string oldAddress = checkIsHaveID(intdeviceID); //得到当前ID对应的旧地址
+
+                            if (oldAddress == null)
                             {
-                                //设备的ID字符串
-                                ID[0] = dataItem.buffer[3];
-                                ID[1] = dataItem.buffer[4];
-                                ID[2] = dataItem.buffer[5];
-                                ID[3] = dataItem.buffer[6];
-                                int intdeviceID = byteToInt(ID);
-
-                                string oldAddress = checkIsHaveID(intdeviceID); //得到当前ID对应的旧地址
-
-                                if (oldAddress == null)
-                                {
-                                    //若不存在，属于全新地址，更新ID号
-                                    dataItem.intDeviceID = intdeviceID;
-                                    //把信息存入数据库
-                                    NetDb.addsensorinfo(intdeviceID, dataItem.strAddress, dataItem.strAddress,
-                                        dataItem.status.HeartTime.ToString(),
-                                        Convert.ToInt32(dataItem.status.clientStage));
-                                }
-                                else
-                                {
-                                    //若存在，把旧地址的status数据属性复制到新地址上
-                                    DataItem olddataItem = (DataItem)htClient[oldAddress]; //取出旧的dataitem
-                                    //更新进哈希表
-                                    dataItem.intDeviceID = intdeviceID;
-                                    dataItem.status = olddataItem.status;
-                                    dataItem.status.clientStage = ClientStage.idle;
-                                    dataItem.recDataQueue = olddataItem.recDataQueue;
-                                    dataItem.sendDataQueue = olddataItem.sendDataQueue;
-
-                                    //把信息存入数据库
-                                    NetDb.addsensorinfo(intdeviceID, dataItem.strAddress, dataItem.strAddress,
-                                        dataItem.status.HeartTime.ToString(),
-                                        Convert.ToInt32(dataItem.status.clientStage));
-
-                                    htClient.Remove(oldAddress); //删除旧地址的键值对
-                                }
+                                //若不存在，属于全新地址，更新ID号
+                                dataItem.intDeviceID = intdeviceID;
+                                //把信息存入数据库
+                                NetDb.addsensorinfo(intdeviceID, dataItem.strAddress, dataItem.strAddress,
+                                    dataItem.status.HeartTime.ToString(),
+                                    Convert.ToInt32(dataItem.status.clientStage));
                             }
+                            else
+                            {
+                                //若存在，把旧地址的status数据属性复制到新地址上
+                                DataItem olddataItem = (DataItem)htClient[oldAddress]; //取出旧的dataitem
+                                                                                       //更新进哈希表
+                                dataItem.intDeviceID = intdeviceID;
+                                dataItem.status = olddataItem.status;
+                                dataItem.status.clientStage = ClientStage.idle;
+                                dataItem.recDataQueue = olddataItem.recDataQueue;
+                                dataItem.sendDataQueue = olddataItem.sendDataQueue;
 
-                        } // if (dataItem.buffer[2] == 0xFF)
-                    }
+                                //把信息存入数据库
+                                NetDb.addsensorinfo(intdeviceID, dataItem.strAddress, dataItem.strAddress,
+                                    dataItem.status.HeartTime.ToString(),
+                                    Convert.ToInt32(dataItem.status.clientStage));
 
-                    clientSocket.BeginReceive(dataItem.buffer, 0, dataItem.buffer.Length, SocketFlags.None, OnReceive,
-                        clientSocket);
-                //} //if (clientSocket.Connected)
-                //else
-                //{
-                    //DebugLog.Debug("clientSocket.Connected false!\r\n");
-                   // System.Diagnostics.Debug.WriteLine(DateTime.Now + "clientSocket.Connected false!\r\n");
-               // }
+                                htClient.Remove(oldAddress); //删除旧地址的键值对
+                            }
+                        }
+
+                    } // if (dataItem.buffer[2] == 0xFF)
+                }//else if 
+
+                clientSocket.BeginReceive(dataItem.buffer, 0, dataItem.buffer.Length, SocketFlags.None, OnReceive,
+                    clientSocket);
             }
             catch (Exception ex)
             {
@@ -273,7 +266,7 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
-                        dataItem.CheckTimeout(maxTimeOut);
+                        //dataItem.CheckTimeout(maxTimeOut);(设备掉线后判断有bug)
                         if (dataItem.status.adStage == AdStage.AdFinished)
                         {
                             AdFinishedClientNum++;
@@ -285,12 +278,11 @@ namespace WizepipesSocketServer
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
                         {
-                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
-                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
+                            Queue<byte[]> htsendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
+                            while (htsendCmdQueue != null && htsendCmdQueue.Count > 0)
                             {
-                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue());//复制数据
+                                dataItem.sendDataQueue.Enqueue(htsendCmdQueue.Dequeue());//复制数据
                             }
-                            //htSendCmd.Remove(dataItem.intDeviceID);//不需要移除，等count减到0后，上面的if判断自然进不去
                         }
                     }
 
@@ -325,7 +317,6 @@ namespace WizepipesSocketServer
         {
             int[] cfg = new int[5];//存储从数据库读取的设备配置参数
             // TODO:收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
-            //test
             while (IsServerOpen)
             {
                 try
@@ -333,7 +324,7 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         cfg = NetDb.readsensorcfg(dataItem.intDeviceID); //从数据库读取设备的配置参数
-                        if (cfg != null)
+                        if (cfg != null && cfg[0] == 0)
                         {
                             byte[] cmdCapTime = cmdItem.CmdSetCapTime;
                             cmdCapTime[9] = (byte)cfg[1];
@@ -348,10 +339,15 @@ namespace WizepipesSocketServer
                             Queue<byte[]> DbCmdQueue = new Queue<byte[]>();
                             DbCmdQueue.Enqueue(cmdCapTime);
                             DbCmdQueue.Enqueue(cmdSetOpenAndCloseTime);
-                            if (!htSendCmd.ContainsKey(dataItem.intDeviceID))
+                            if (!htSendCmd.ContainsKey(dataItem.intDeviceID))//不存在ID则添加
                             {
                                 htSendCmd.Add(dataItem.intDeviceID, DbCmdQueue);
                                 Console.WriteLine("htSendCmd添加命令队列成功");
+                            }
+                            else//存在则更新
+                            {
+                                htSendCmd[dataItem.intDeviceID] = DbCmdQueue;
+                                Console.WriteLine("htSendCmd更新命令队列成功");
                             }
 
                         }
@@ -450,10 +446,9 @@ namespace WizepipesSocketServer
                 foreach (DataItem dataItem in htClient.Values)
                 {
                     dataItem.sendDataQueue.Enqueue(cmd);
+                    dataItem.status.adStage = AdStage.Idle;
                 }
             }
-            //Queue<byte[]> sendCmdQueue = htSendCmd[id] as Queue<byte[]>;
-            //sendCmdQueue.Enqueue(cmd);
         }
 
         public string ViewClientInfo()
@@ -461,8 +456,8 @@ namespace WizepipesSocketServer
             string msg = null;
             foreach (DataItem dataItem in htClient.Values)
             {
-                msg += "地址为:"+dataItem.strAddress + "-ID号为:"+dataItem.intDeviceID + "-当前包数为:"+dataItem.status.currentsendbulk +
-                      "-HeartTime为:"+dataItem.status.HeartTime+";\r\n";
+                msg += "ID号:" + dataItem.intDeviceID + "-包数:" + dataItem.status.currentsendbulk +
+                      "-HeartTime为:" + dataItem.status.HeartTime + ";\r\n";
             }
             return msg;
         }
