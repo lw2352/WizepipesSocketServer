@@ -288,6 +288,7 @@ namespace WizepipesSocketServer
 
                 if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
                 {
+                    Console.WriteLine("设备号：" + intDeviceID + "超时,服务器主动断开连接");
                     status.clientStage = ClientStage.offLine;
                     CloseSocket();
                 }

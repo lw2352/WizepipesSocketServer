@@ -22,8 +22,8 @@ namespace WizepipesSocketServer
 
         public int perPackageLength = 1009;//每包的长度
         public int checkRecDataQueueTimeInterval = 10;  // 检查接收数据包队列时间休息间隔(ms)
-        public int checkSendDataQueueTimeInterval = 5000;  // 检查发送命令队列时间休息间隔(ms)
-        public int checkDataBaseQueueTimeInterval = 15000;  // 检查数据库命令队列时间休息间隔(ms)
+        public int checkSendDataQueueTimeInterval = 3000;  // 检查发送命令队列时间休息间隔(ms)
+        public int checkDataBaseQueueTimeInterval = 5000;  // 检查数据库命令队列时间休息间隔(ms)
         public static int g_datafulllength = 600000; //完整数据包的一个长度
         public static int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
@@ -148,7 +148,7 @@ namespace WizepipesSocketServer
                 Socket clientSocket = ar.AsyncState as Socket;
                 strAddress = clientSocket.RemoteEndPoint.ToString();
 
-                DataItem dataItem = (DataItem)htClient[strAddress];//取出address对应的dataitem
+                DataItem dataItem = (DataItem) htClient[strAddress]; //取出address对应的dataitem
 
                 bytesRead = clientSocket.EndReceive(ar); //接收到的数据长度
 
@@ -197,8 +197,8 @@ namespace WizepipesSocketServer
                             else
                             {
                                 //若存在，把旧地址的status数据属性复制到新地址上
-                                DataItem olddataItem = (DataItem)htClient[oldAddress]; //取出旧的dataitem
-                                                                                       //更新进哈希表
+                                DataItem olddataItem = (DataItem) htClient[oldAddress]; //取出旧的dataitem
+                                //更新进哈希表
                                 dataItem.intDeviceID = intdeviceID;
                                 dataItem.status = olddataItem.status;
                                 dataItem.status.clientStage = ClientStage.idle;
@@ -216,10 +216,20 @@ namespace WizepipesSocketServer
                         }
 
                     } // if (dataItem.buffer[2] == 0xFF)
-                }//else if 
+                } //else if 
 
                 clientSocket.BeginReceive(dataItem.buffer, 0, dataItem.buffer.Length, SocketFlags.None, OnReceive,
                     clientSocket);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Socket 已关闭");
+                DebugLog.Debug("Socket 已关闭"+ex);
+            }
+            catch (SocketException ex)
+            {
+                System.Diagnostics.Debug.WriteLine("尝试访问套接字时出错");
+                DebugLog.Debug("尝试访问套接字时出错" + ex);
             }
             catch (Exception ex)
             {
