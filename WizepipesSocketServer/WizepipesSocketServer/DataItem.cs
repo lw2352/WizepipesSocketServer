@@ -36,7 +36,7 @@ namespace WizepipesSocketServer
 
     class DataItem
     {
-        public static log4net.ILog DebugLog = log4net.LogManager.GetLogger(typeof(SocketServer));
+        public static log4net.ILog Log = log4net.LogManager.GetLogger(typeof(SocketServer));
 
         public Socket socket;
         public byte[] buffer;
@@ -121,6 +121,7 @@ namespace WizepipesSocketServer
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--AD采样结束" + "\n";
                         Console.WriteLine(msg);
+                        Log.Debug(msg);
                     }
                     break;
 
@@ -144,6 +145,7 @@ namespace WizepipesSocketServer
                                 msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress +
                                       "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
                                 Console.WriteLine(msg);
+                                Log.Debug(msg);
                                 status.adStage = AdStage.AdStored;//上传完成，置空闲位
                             }
                         }
@@ -156,7 +158,7 @@ namespace WizepipesSocketServer
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--设定GPS采样时间成功" + "\n";
                         Console.WriteLine(msg);
-                        //ShowMsg(msg);
+                        Log.Debug(msg);
                         NetDb.UpdateSensorCfg(intDeviceID, 1);
                     }
 
@@ -168,7 +170,7 @@ namespace WizepipesSocketServer
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
                         Console.WriteLine(msg);
-                        // ShowMsg(msg);
+                        Log.Debug(msg);
                     }
                     break;
 
@@ -217,9 +219,12 @@ namespace WizepipesSocketServer
                     status.HeartTime = DateTime.Now;
                     Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") +"设备号--" +
                         intDeviceID + "收到心跳包\r\n");
+                    Log.Debug("设备号--" +
+                              intDeviceID + "收到心跳包\r\n");
                     break;
                 default:
                     Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "收到其他类型数据\r\n");
+                    Log.Debug("收到其他类型数据");
                     break;
             }
 
@@ -235,7 +240,7 @@ namespace WizepipesSocketServer
             try
             {
                 socket.BeginSend(cmd, 0, cmd.Length, SocketFlags.None, new AsyncCallback(OnSend), this);
-                Console.WriteLine(DateTime.Now + "向设备号是--" + intDeviceID + "--发送的命令号是" + byteToHexStr(cmd) + ";\n");
+                Console.WriteLine(DateTime.Now + "向设备号是--" + intDeviceID + "--发送的命令是" + byteToHexStr(cmd) + ";\n");
             }
             catch (Exception ex)
             {
@@ -243,7 +248,7 @@ namespace WizepipesSocketServer
                 Console.WriteLine(ex);
                 CloseSocket();
                 status.clientStage = ClientStage.offLine;
-                DebugLog.Debug(ex);
+                Log.Debug(ex);
             }
         }
 
@@ -259,7 +264,7 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
-                DebugLog.Debug(ex);
+                Log.Debug(ex);
                 Console.WriteLine(ex);
             }
         }
@@ -273,7 +278,7 @@ namespace WizepipesSocketServer
             }
             catch (Exception ex)
             {
-                DebugLog.Debug(ex);
+                Log.Debug(ex);
                 string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
             }
@@ -289,6 +294,7 @@ namespace WizepipesSocketServer
                 if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
                 {
                     Console.WriteLine("设备号：" + intDeviceID + "超时,服务器主动断开连接");
+                    Log.Debug("设备号：" + intDeviceID + "超时,服务器主动断开连接");
                     status.clientStage = ClientStage.offLine;
                     CloseSocket();
                 }

@@ -45,7 +45,9 @@ namespace WizepipesSocketServer
 
         private void buttonViewClientInfo_Click(object sender, EventArgs e)
         {
-            richTextBox1.AppendText(server.ViewClientInfo());
+            string msg = server.ViewClientInfo();
+            if (msg != null)
+            richTextBox1.AppendText(msg);
         }
 
         private void buttonClear_Click(object sender, EventArgs e)

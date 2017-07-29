@@ -31,6 +31,9 @@
             this.buttonOpenServer = new System.Windows.Forms.Button();
             this.buttonUpload = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.buttonClear = new System.Windows.Forms.Button();
+            this.buttonViewClientInfo = new System.Windows.Forms.Button();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.label12 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.buttonCloseServer = new System.Windows.Forms.Button();
@@ -39,9 +42,6 @@
             this.textBoxServerPort = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
             this.textBoxServerIP = new System.Windows.Forms.TextBox();
-            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
-            this.buttonViewClientInfo = new System.Windows.Forms.Button();
-            this.buttonClear = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -87,6 +87,35 @@
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "服务器配置";
+            // 
+            // buttonClear
+            // 
+            this.buttonClear.Location = new System.Drawing.Point(132, 82);
+            this.buttonClear.Name = "buttonClear";
+            this.buttonClear.Size = new System.Drawing.Size(52, 23);
+            this.buttonClear.TabIndex = 28;
+            this.buttonClear.Text = "Clear";
+            this.buttonClear.UseVisualStyleBackColor = true;
+            this.buttonClear.Click += new System.EventHandler(this.buttonClear_Click);
+            // 
+            // buttonViewClientInfo
+            // 
+            this.buttonViewClientInfo.Location = new System.Drawing.Point(13, 82);
+            this.buttonViewClientInfo.Name = "buttonViewClientInfo";
+            this.buttonViewClientInfo.Size = new System.Drawing.Size(95, 23);
+            this.buttonViewClientInfo.TabIndex = 27;
+            this.buttonViewClientInfo.Text = "查询设备信息";
+            this.buttonViewClientInfo.UseVisualStyleBackColor = true;
+            this.buttonViewClientInfo.Click += new System.EventHandler(this.buttonViewClientInfo_Click);
+            // 
+            // richTextBox1
+            // 
+            this.richTextBox1.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.richTextBox1.Location = new System.Drawing.Point(12, 111);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.Size = new System.Drawing.Size(423, 370);
+            this.richTextBox1.TabIndex = 26;
+            this.richTextBox1.Text = "";
             // 
             // label12
             // 
@@ -158,34 +187,6 @@
             this.textBoxServerIP.Size = new System.Drawing.Size(103, 21);
             this.textBoxServerIP.TabIndex = 1;
             this.textBoxServerIP.Text = "192.168.3.83";
-            // 
-            // richTextBox1
-            // 
-            this.richTextBox1.Location = new System.Drawing.Point(12, 111);
-            this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(423, 370);
-            this.richTextBox1.TabIndex = 26;
-            this.richTextBox1.Text = "";
-            // 
-            // buttonViewClientInfo
-            // 
-            this.buttonViewClientInfo.Location = new System.Drawing.Point(13, 82);
-            this.buttonViewClientInfo.Name = "buttonViewClientInfo";
-            this.buttonViewClientInfo.Size = new System.Drawing.Size(95, 23);
-            this.buttonViewClientInfo.TabIndex = 27;
-            this.buttonViewClientInfo.Text = "查询设备信息";
-            this.buttonViewClientInfo.UseVisualStyleBackColor = true;
-            this.buttonViewClientInfo.Click += new System.EventHandler(this.buttonViewClientInfo_Click);
-            // 
-            // buttonClear
-            // 
-            this.buttonClear.Location = new System.Drawing.Point(132, 82);
-            this.buttonClear.Name = "buttonClear";
-            this.buttonClear.Size = new System.Drawing.Size(52, 23);
-            this.buttonClear.TabIndex = 28;
-            this.buttonClear.Text = "Clear";
-            this.buttonClear.UseVisualStyleBackColor = true;
-            this.buttonClear.Click += new System.EventHandler(this.buttonClear_Click);
             // 
             // MainForm
             // 
