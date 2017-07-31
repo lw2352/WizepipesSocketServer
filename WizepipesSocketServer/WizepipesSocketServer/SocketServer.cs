@@ -366,7 +366,7 @@ namespace WizepipesSocketServer
                         if (dataItem.status.adStage == AdStage.AdStored)
                         {
                             adStoredClinetNum++;
-                            if (dataItem.status.IsGetADNow == false)
+                            if (dataItem.status.IsGetADNow == false && IsAutoTest == false)
                             {
                                 dataItem.status.adStage = AdStage.Idle;
                             }
