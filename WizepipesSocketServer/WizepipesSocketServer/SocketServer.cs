@@ -20,37 +20,110 @@ namespace WizepipesSocketServer
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
         public static CmdItem cmdItem = new CmdItem();//实例化
 
-        public int perPackageLength = 1009;//每包的长度
+        public string ServerIP = "192.168.3.83";
+        public int ServerPort = 8085;
+        public int bufferLength = 1009;//每包的长度
+        public int Adlength = 1000;// ad数据长度
         public int checkRecDataQueueTimeInterval = 10;  // 检查接收数据包队列时间休息间隔(ms)
         public int checkSendDataQueueTimeInterval = 3000;  // 检查发送命令队列时间休息间隔(ms)
         public int checkDataBaseQueueTimeInterval = 5000;  // 检查数据库命令队列时间休息间隔(ms)
-        public static int g_datafulllength = 600000; //完整数据包的一个长度
-        public static int g_totalPackageCount = 600; //600个包
+
+        public int g_totalPackageCount = 600; //600个包
         public bool IsServerOpen = true;
         public int maxTimeOut = 180;//超时未响应时间--3min
         public int maxBadClient = 1;//最大的故障设备数
         public bool IsAutoTest = true;
+        public int CapNextTime = 5;
 
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);//处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
         //初始化服务器，给服务参数赋值
-        public void InitServer()
+
+        #region get-set访问器（12个）
+        public string CfgServerIP
         {
-            string ConfigIp = System.Configuration.ConfigurationManager.AppSettings["ServerIP"];
-            Console.WriteLine("从config文件读取的IP为：" + ConfigIp);
-            string DB = System.Configuration.ConfigurationManager.AppSettings["ServerDB"];
-            MySQLDB.strDbConn = DB;
+            get { return ServerIP; }
+            set { ServerIP = value; }
         }
 
-        public bool OpenServer(string ip, int port)
+        public int CfgServerPort
+        {
+            get { return ServerPort; }
+            set { ServerPort = value; }
+        }
+
+
+        public int CfgbufferLength
+        {
+            get { return bufferLength; }
+            set { bufferLength = value; }
+        }
+
+        public int CfgAdlength
+        {
+            get { return Adlength; }
+            set { Adlength = value; }
+        }
+
+        public int CfgcheckRecDataQueueTimeInterval
+        {
+            get { return checkRecDataQueueTimeInterval; }
+            set { checkRecDataQueueTimeInterval = value; }
+        }
+
+        public int CfgcheckSendDataQueueTimeInterval
+        {
+            get { return checkSendDataQueueTimeInterval; }
+            set { checkSendDataQueueTimeInterval = value; }
+        }
+
+        public int CfgcheckDataBaseQueueTimeInterval
+        {
+            get { return checkDataBaseQueueTimeInterval; }
+            set { checkDataBaseQueueTimeInterval = value; }
+        }
+
+        public int Cfgg_totalPackageCount
+        {
+            get { return g_totalPackageCount; }
+            set { g_totalPackageCount = value; }
+        }
+
+        public int CfgmaxTimeOut
+        {
+            get { return maxTimeOut; }
+            set { maxTimeOut = value; }
+        }
+
+        public int CfgmaxBadClient
+        {
+            get { return maxBadClient; }
+            set { maxBadClient = value; }
+        }
+
+        public int CfgIsAutoTest
+        {
+            get { return Convert.ToInt32(IsAutoTest); }
+            set { IsAutoTest = Convert.ToBoolean(value); }
+        }
+
+        public int CfgCapNextTime
+        {
+            get { return CapNextTime; }
+            set { CapNextTime = value; }
+        }
+
+        #endregion
+
+        public bool OpenServer()
         {
             try
             {
 
                 ServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
+                IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(ServerIP), ServerPort);
 
                 //Bind and listen on the given address
                 ServerSocket.Bind(ipEndPoint);
@@ -114,14 +187,14 @@ namespace WizepipesSocketServer
                 {
                     Socket clientSocket = ServerSocket.EndAccept(ar);
                     //Start listening for more clients
-                    ServerSocket.BeginAccept(new AsyncCallback(OnAccept), null);
+                    ServerSocket.BeginAccept(OnAccept, null);
 
                     string strAddress = clientSocket.RemoteEndPoint.ToString();
                     if (!htClient.ContainsKey(strAddress))
                     {
                         DataItem dataItem = new DataItem();
 
-                        dataItem.Init(clientSocket, perPackageLength, strAddress, 0, g_datafulllength); //初始化dataItem
+                        dataItem.Init(clientSocket, bufferLength, strAddress, 0, Adlength * g_totalPackageCount); //初始化dataItem
 
                         htClient.Add(strAddress, dataItem);
 
@@ -151,7 +224,7 @@ namespace WizepipesSocketServer
                 Socket clientSocket = ar.AsyncState as Socket;
                 strAddress = clientSocket.RemoteEndPoint.ToString();
 
-                DataItem dataItem = (DataItem) htClient[strAddress]; //取出address对应的dataitem
+                DataItem dataItem = (DataItem)htClient[strAddress]; //取出address对应的dataitem
 
                 bytesRead = clientSocket.EndReceive(ar); //接收到的数据长度
 
@@ -194,13 +267,13 @@ namespace WizepipesSocketServer
                                 //把信息存入数据库
                                 NetDb.addsensorinfo(intdeviceID, dataItem.strAddress, dataItem.strAddress,
                                     dataItem.status.HeartTime.ToString(),
-                                    Convert.ToInt32(dataItem.status.clientStage));
-                                Log.Debug("新设备号:" + intdeviceID + "-地址为"+ dataItem.strAddress + "-已连接");
+                                    Convert.ToInt32(dataItem.status.clientStage), Convert.ToInt32(dataItem.status.adStage));
+                                Log.Debug("新设备号:" + intdeviceID + "-地址为" + dataItem.strAddress + "-已连接");
                             }
                             else
                             {
                                 //若存在，把旧地址的status数据属性复制到新地址上
-                                DataItem olddataItem = (DataItem) htClient[oldAddress]; //取出旧的dataitem
+                                DataItem olddataItem = (DataItem)htClient[oldAddress]; //取出旧的dataitem
                                 //更新进哈希表
                                 dataItem.intDeviceID = intdeviceID;
                                 dataItem.status = olddataItem.status;
@@ -212,10 +285,10 @@ namespace WizepipesSocketServer
                                 //把信息存入数据库
                                 NetDb.addsensorinfo(intdeviceID, dataItem.strAddress, dataItem.strAddress,
                                     dataItem.status.HeartTime.ToString(),
-                                    Convert.ToInt32(dataItem.status.clientStage));
+                                    Convert.ToInt32(dataItem.status.clientStage), Convert.ToInt32(dataItem.status.adStage));
 
                                 htClient.Remove(oldAddress); //删除旧地址的键值对
-                                Log.Debug("设备号为:"+ intdeviceID + "删除旧地址:"+ oldAddress+"添加新地址:"+ dataItem.strAddress);
+                                Log.Debug("设备号为:" + intdeviceID + "删除旧地址:" + oldAddress + "添加新地址:" + dataItem.strAddress);
                             }
                         }//if (dataItem.intDeviceID == 0)
 
@@ -228,7 +301,7 @@ namespace WizepipesSocketServer
             catch (ObjectDisposedException ex)
             {
                 System.Diagnostics.Debug.WriteLine("Socket 已关闭");
-                Log.Debug("Socket 已关闭"+ex);
+                Log.Debug("Socket 已关闭" + ex);
             }
             catch (SocketException ex)
             {
@@ -281,7 +354,7 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
-                        dataItem.CheckTimeout(maxTimeOut);//(设备掉线后判断有bug)
+                        dataItem.CheckTimeout(maxTimeOut);
                         if (dataItem.status.clientStage == ClientStage.offLine && dataItem.intDeviceID == 0)//7-28 无效项，需删除
                         {
                             deleteAddress = dataItem.strAddress;
@@ -293,6 +366,10 @@ namespace WizepipesSocketServer
                         if (dataItem.status.adStage == AdStage.AdStored)
                         {
                             adStoredClinetNum++;
+                            if (dataItem.status.IsGetADNow == false)
+                            {
+                                dataItem.status.adStage = AdStage.Idle;
+                            }
                         }
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID))//发送命令哈希表中是否包含当前dataItem的id
@@ -323,7 +400,7 @@ namespace WizepipesSocketServer
                         {
                             //开始上传
                             Console.WriteLine("AD数据存储完毕，重设时间");
-                            SetCapTime(5);
+                            SetCapTime(0xFF);//自动测试打开后，采样完成会设置下一次的采样时间
                             Log.Debug("AD数据存储完毕，重设时间");
                         }
                     }
@@ -342,7 +419,7 @@ namespace WizepipesSocketServer
         //读取数据库命令线程
         public void CheckDataBaseQueue(object state)
         {
-            int[] cfg = new int[5];//存储从数据库读取的设备配置参数
+            int[] cfg = new int[6];//存储从数据库读取的设备配置参数
             // TODO:收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
             while (IsServerOpen)
             {
@@ -350,7 +427,8 @@ namespace WizepipesSocketServer
                 {
                     foreach (DataItem dataItem in htClient.Values)
                     {
-                        cfg = NetDb.readsensorcfg(dataItem.intDeviceID); //从数据库读取设备的配置参数
+                        cfg = NetDb.readsensorcfg(dataItem.intDeviceID); //从数据库读取设备的配置参数                                              
+
                         if (cfg != null && cfg[0] == 0)
                         {
                             byte[] cmdCapTime = cmdItem.CmdSetCapTime;
@@ -379,10 +457,32 @@ namespace WizepipesSocketServer
                                 string msg = "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
-                            }
+                            }                           
 
                         }
-                    }
+
+                        if (cfg != null && cfg[5] == 1 && cfg[0] == 2)
+                        {                            
+                            dataItem.status.IsGetADNow = true;
+                            SetCapTime(dataItem.intDeviceID);
+                        }
+                        else if (cfg != null && cfg[5] == 1 && cfg[0] == 1)
+                        {
+                            //立即采样时间设置成功,把标志位复位
+                            NetDb.addsensorcfg(dataItem.intDeviceID, 2, cfg[1], cfg[2], cfg[3], cfg[4], 0);
+                            Log.Debug("立即采样时间设置成功,把标志位复位");
+                        }
+
+                        if (dataItem.status.IsGetADNow == true && dataItem.status.adStage == AdStage.AdStored)
+                        {
+                            //立即采样完成后，重新设置一次采样时刻
+                            NetDb.addsensorcfg(dataItem.intDeviceID, 0, cfg[1], cfg[2], cfg[3], cfg[4], 0);
+                            dataItem.status.IsGetADNow = false;
+                            dataItem.status.adStage = AdStage.Idle;
+                            Log.Debug("立即采样完成后，重新设置一次采样时刻");
+                        }
+
+                    }//end of foreach
                 }
                 catch (Exception ex)
                 {
@@ -440,6 +540,7 @@ namespace WizepipesSocketServer
             return returnInt;
         }
 
+
         public void UploadData()
         {
             byte[] CmdAD = cmdItem.CmdADPacket;
@@ -449,36 +550,57 @@ namespace WizepipesSocketServer
                 dataItem.status.currentsendbulk = 0;
                 dataItem.status.datalength = 0;
                 dataItem.status.adStage = AdStage.AdUploading;
+                NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
+                    dataItem.status.HeartTime.ToString(),
+                    Convert.ToInt32(dataItem.status.clientStage), Convert.ToInt32(dataItem.status.adStage));
+
                 dataItem.sendDataQueue.Enqueue(CmdAD);
             }
         }
 
-        public void SetCapTime(int nextTime)
+        public void SetCapTime(int id)
         {
             byte[] cmd = cmdItem.CmdSetCapTime;
-            int NextTime = Convert.ToInt32(nextTime);
-            if (DateTime.Now.Minute + NextTime <= 59)
+            //int NextTime = Convert.ToInt32(nextTime);
+            if (DateTime.Now.Minute + CapNextTime <= 59)
             {
                 cmd[9] = (byte)DateTime.Now.Hour;
-                cmd[10] = (byte)(DateTime.Now.Minute + NextTime);//当前时刻加5分钟
+                cmd[10] = (byte)(DateTime.Now.Minute + CapNextTime);//当前时刻加5分钟
             }
             else
             { //分钟数大于60
                 cmd[9] = (byte)(DateTime.Now.Hour + 1);
-                cmd[10] = (byte)(DateTime.Now.Minute + NextTime - 60);
+                cmd[10] = (byte)(DateTime.Now.Minute + CapNextTime - 60);
             }
-            AddCmdToQueue(0xFF, cmd);
+
+            if (IsAutoTest == true)
+            {
+                AddCmdToQueue(0xFF, cmd);
+            }
+            else AddCmdToQueue(id, cmd);
         }
 
         //test for set capTime
         public void AddCmdToQueue(int id, byte[] cmd)
         {
-            if (id == 0xFF)
+            if (id == 0xFF)//立即采样的测试使用
             {
                 foreach (DataItem dataItem in htClient.Values)
                 {
                     dataItem.sendDataQueue.Enqueue(cmd);
                     dataItem.status.adStage = AdStage.Idle;
+                }
+            }
+            else
+            {
+                foreach (DataItem dataItem in htClient.Values)
+                {
+                    if (dataItem.intDeviceID == id)
+                    {
+                        dataItem.sendDataQueue.Enqueue(cmd);
+                        if (cmd[2] == 0x25)
+                        { dataItem.status.adStage = AdStage.Idle; }
+                    }
                 }
             }
         }
@@ -488,8 +610,8 @@ namespace WizepipesSocketServer
             string msg = null;
             foreach (DataItem dataItem in htClient.Values)
             {
-                msg += "地址:"+dataItem.strAddress+"-ID号:" + dataItem.intDeviceID + "-包数:" + dataItem.status.currentsendbulk +
-                      "-心跳时间:" + dataItem.status.HeartTime.ToLongTimeString() + "-设备状态:" + dataItem.status.clientStage+ "-AD状态:"+ dataItem.status.adStage + ";\r\n";
+                msg += "地址:" + dataItem.strAddress + "-ID号:" + dataItem.intDeviceID + "-包数:" + dataItem.status.currentsendbulk +
+                      "-心跳时间:" + dataItem.status.HeartTime.ToLongTimeString() + "-设备状态:" + dataItem.status.clientStage + "-AD状态:" + dataItem.status.adStage + ";\r\n";
             }
             return msg;
         }

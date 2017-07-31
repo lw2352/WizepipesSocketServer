@@ -17,13 +17,53 @@ namespace WizepipesSocketServer
         public MainForm()
         {
             InitializeComponent();
-            server.InitServer();
+            ReadCfg();
+        }
+
+        public void ReadCfg()
+        {
+            string msg = null;
+
+            string ConfigIp = System.Configuration.ConfigurationManager.AppSettings["ServerIP"];
+            string ConfigPort = System.Configuration.ConfigurationManager.AppSettings["ServerPort"];
+            string ConfigbufferLength = System.Configuration.ConfigurationManager.AppSettings["bufferLength"];
+            string ConfigAdlength = System.Configuration.ConfigurationManager.AppSettings["Adlength"];
+            string ConfigcheckRecDataQueueTimeInterval = System.Configuration.ConfigurationManager.AppSettings["checkRecDataQueueTimeInterval"];
+            string ConfigcheckSendDataQueueTimeInterval = System.Configuration.ConfigurationManager.AppSettings["checkSendDataQueueTimeInterval"];
+            string ConfigcheckDataBaseQueueTimeInterval = System.Configuration.ConfigurationManager.AppSettings["checkDataBaseQueueTimeInterval"];
+            string Configg_totalPackageCount = System.Configuration.ConfigurationManager.AppSettings["g_totalPackageCount"];
+            string ConfigmaxTimeOut = System.Configuration.ConfigurationManager.AppSettings["maxTimeOut"];
+            string ConfigmaxBadClient = System.Configuration.ConfigurationManager.AppSettings["maxBadClient"];
+            string ConfigIsAutoTest = System.Configuration.ConfigurationManager.AppSettings["IsAutoTest"];
+            string ConfigCapNextTime = System.Configuration.ConfigurationManager.AppSettings["CapNextTime"];
+            string DB = System.Configuration.ConfigurationManager.AppSettings["ServerDB"];
+
+            msg = "从appConfig读取到的配置信息是：" + "ServerIP:" + ConfigIp + "\r\nServerPort:" + ConfigPort + "\r\nbufferLength:" + ConfigbufferLength + "\r\nAdlength:" + ConfigAdlength +
+                  "\r\n接收数据线程休息时间："+ConfigcheckRecDataQueueTimeInterval + "\r\n发送数据线程休息时间：" + ConfigcheckSendDataQueueTimeInterval +
+                  "\r\n读取数据库线程休息时间：" + ConfigcheckDataBaseQueueTimeInterval
+            +"\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长："+ConfigmaxTimeOut + "\r\n允许故障设备数：" + ConfigmaxBadClient + "\r\n是否自动测试："+ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB+"自动采样的间隔时长"+ ConfigCapNextTime;
+
+            richTextBox1.AppendText(msg);
+            //共12+1个
+            server.CfgServerIP = ConfigIp;
+            server.CfgServerPort = Convert.ToInt32(ConfigPort);
+            server.CfgbufferLength = Convert.ToInt32(ConfigbufferLength);
+            server.CfgAdlength = Convert.ToInt32(ConfigAdlength);
+            server.CfgcheckRecDataQueueTimeInterval = Convert.ToInt32(ConfigcheckRecDataQueueTimeInterval);
+            server.CfgcheckSendDataQueueTimeInterval = Convert.ToInt32(ConfigcheckSendDataQueueTimeInterval);
+            server.CfgcheckDataBaseQueueTimeInterval = Convert.ToInt32(ConfigcheckDataBaseQueueTimeInterval);
+            server.Cfgg_totalPackageCount = Convert.ToInt32(Configg_totalPackageCount);
+            server.CfgmaxTimeOut = Convert.ToInt32(ConfigmaxTimeOut);
+            server.CfgmaxBadClient = Convert.ToInt32(ConfigmaxBadClient);
+            server.CfgIsAutoTest = Convert.ToInt32(ConfigIsAutoTest);
+            server.CfgCapNextTime = Convert.ToInt32(ConfigCapNextTime);
+            MySQLDB.strDbConn = DB;
+
         }
 
         private void button1_Click(object sender, EventArgs e)
-        {
-            
-            server.OpenServer(textBoxServerIP.Text, Convert.ToInt32(textBoxServerPort.Text));
+        {            
+            server.OpenServer();
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -33,9 +73,13 @@ namespace WizepipesSocketServer
 
         private void buttonCapNow_Click(object sender, EventArgs e)
         {
-            int NextTime = Convert.ToInt32(textBoxNextTime.Text);
-
-            server.SetCapTime(NextTime);
+            if (checkBoxAutoTest.Checked == true)
+            {
+                server.CfgIsAutoTest = 1;
+            }
+            else
+            { server.CfgIsAutoTest = 0;}
+            server.SetCapTime(0xFF);
         }
 
         private void buttonCloseServer_Click(object sender, EventArgs e)

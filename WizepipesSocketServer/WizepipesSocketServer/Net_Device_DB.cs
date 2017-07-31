@@ -9,7 +9,7 @@ namespace WizepipesSocketServer
     public class NetDb
     {
         public static string addsensorinfo(int sensorintdeviceID, string sensorIP, string sensorPort,
-            string sensorloginTime, int sensorStatus)
+            string sensorloginTime, int sensorStatus, int AdStage)
         {
             MySQLDB.InitDb();
             string sensorid = "0";
@@ -42,8 +42,8 @@ namespace WizepipesSocketServer
                 MySqlParameter[] parmss = null;
                 string strSQL = "";
                 bool IsDelSuccess = false;
-                strSQL = " insert into tsensorinfo (intdeviceID,IP,Port,loginTime,Status) values" +
-                         "(?sensorintdeviceID,?sensorIP,?sensorPort,?sensorloginTime,?sensorStatus);";
+                strSQL = " insert into tsensorinfo (intdeviceID,IP,Port,loginTime,Status,AdStage) values" +
+                         "(?sensorintdeviceID,?sensorIP,?sensorPort,?sensorloginTime,?sensorStatus,?sensorAdStage);";
 
                 parmss = new MySqlParameter[]
                 {
@@ -51,13 +51,15 @@ namespace WizepipesSocketServer
                     new MySqlParameter("?sensorIP", MySqlDbType.VarChar),
                     new MySqlParameter("?sensorPort", MySqlDbType.VarChar),
                     new MySqlParameter("?sensorloginTime", MySqlDbType.DateTime),
-                    new MySqlParameter("?sensorStatus", MySqlDbType.Int32)
+                    new MySqlParameter("?sensorStatus", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorAdStage", MySqlDbType.Int32)
                 };
                 parmss[0].Value = sensorintdeviceID;
                 parmss[1].Value = sensorIP;
                 parmss[2].Value = sensorPort;
                 parmss[3].Value = Convert.ToDateTime(sensorloginTime);
                 parmss[4].Value = sensorStatus;
+                parmss[5].Value = AdStage;
 
                 try
                 {
@@ -87,7 +89,7 @@ namespace WizepipesSocketServer
                 string strSQL = "";
                 bool IsDelSuccess = false;
                 strSQL =
-                    "Update tsensorinfo SET IP=?sensorIP,Port=?sensorPort,loginTime=?sensorloginTime,Status=?sensorStatus WHERE intdeviceID=?sensorintdeviceID";
+                    "Update tsensorinfo SET IP=?sensorIP,Port=?sensorPort,loginTime=?sensorloginTime,Status=?sensorStatus, AdStage=?sensorAdStage WHERE intdeviceID=?sensorintdeviceID";
 
                 parmss = new MySqlParameter[]
                 {
@@ -95,13 +97,15 @@ namespace WizepipesSocketServer
                     new MySqlParameter("?sensorIP", MySqlDbType.VarChar),
                     new MySqlParameter("?sensorPort", MySqlDbType.VarChar),
                     new MySqlParameter("?sensorloginTime", MySqlDbType.DateTime),
-                    new MySqlParameter("?sensorStatus", MySqlDbType.Int32)
+                    new MySqlParameter("?sensorStatus", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorAdStage", MySqlDbType.Int32)
                 };
                 parmss[0].Value = sensorintdeviceID;
                 parmss[1].Value = sensorIP;
                 parmss[2].Value = sensorPort;
                 parmss[3].Value = Convert.ToDateTime(sensorloginTime);
                 parmss[4].Value = sensorStatus;
+                parmss[5].Value = AdStage;
 
                 try
                 {
@@ -226,7 +230,7 @@ namespace WizepipesSocketServer
 
 
         public static string addsensorcfg(int sensorintdeviceID, int sensorCmdNumHex, int sensorCapTimeHour,
-            int sensorCapTimeMinute, int sensorOpenTime, int sensorCloseTime) //sensorcfg可由多个参数组成,后台再解析
+            int sensorCapTimeMinute, int sensorOpenTime, int sensorCloseTime, int IsCaptureNow) //sensorcfg可由多个参数组成,后台再解析
         {
             MySQLDB.InitDb();
             string sensorid = "0";
@@ -260,8 +264,8 @@ namespace WizepipesSocketServer
                 string strSQL = "";
                 bool IsDelSuccess = false;
                 strSQL =
-                    " insert into tsensorcfg (intdeviceID, CmdNumHex, CapTimeHour,CapTimeMinute,OpenTime,CloseTime) values" +
-                    "(?sensorintdeviceID, ?sensorCmdNumHex, ?sensorCapTimeHour, ?sensorCapTimeMinute, ?sensorOpenTime, ?sensorCloseTime);";
+                    " insert into tsensorcfg (intdeviceID, CmdNumHex, CapTimeHour,CapTimeMinute,OpenTime,CloseTime, IsCaptureNow) values" +
+                    "(?sensorintdeviceID, ?sensorCmdNumHex, ?sensorCapTimeHour, ?sensorCapTimeMinute, ?sensorOpenTime, ?sensorCloseTime, ?sensorIsCaptureNow);";
 
                 parmss = new MySqlParameter[]
                 {
@@ -271,6 +275,7 @@ namespace WizepipesSocketServer
                     new MySqlParameter("?sensorCapTimeMinute", MySqlDbType.Int32),
                     new MySqlParameter("?sensorOpenTime", MySqlDbType.Int32),
                     new MySqlParameter("?sensorCloseTime", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorIsCaptureNow", MySqlDbType.Int32)
                 };
                 parmss[0].Value = sensorintdeviceID;
                 parmss[1].Value = sensorCmdNumHex;
@@ -278,6 +283,7 @@ namespace WizepipesSocketServer
                 parmss[3].Value = sensorCapTimeMinute;
                 parmss[4].Value = sensorOpenTime;
                 parmss[5].Value = sensorCloseTime;
+                parmss[6].Value = IsCaptureNow;
 
                 try
                 {
@@ -307,7 +313,7 @@ namespace WizepipesSocketServer
                 string strSQL = "";
                 bool IsDelSuccess = false;
                 strSQL =
-                    "Update tsensorcfg SET CmdNumHex=?sensorCmdNumHex, CapTimeHour =?sensorCapTimeHour ,CapTimeMinute = ?sensorCapTimeMinute,OpenTime = ?sensorOpenTime,CloseTime = ?sensorCloseTime WHERE intdeviceID=?sensorintdeviceID";
+                    "Update tsensorcfg SET CmdNumHex=?sensorCmdNumHex, CapTimeHour =?sensorCapTimeHour ,CapTimeMinute = ?sensorCapTimeMinute,OpenTime = ?sensorOpenTime,CloseTime = ?sensorCloseTime, IsCaptureNow = ?sensorIsCaptureNow WHERE intdeviceID=?sensorintdeviceID";
 
                 parmss = new MySqlParameter[]
                 {
@@ -317,6 +323,7 @@ namespace WizepipesSocketServer
                     new MySqlParameter("?sensorCapTimeMinute", MySqlDbType.Int32),
                     new MySqlParameter("?sensorOpenTime", MySqlDbType.Int32),
                     new MySqlParameter("?sensorCloseTime", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorIsCaptureNow", MySqlDbType.Int32)
                 };
                 parmss[0].Value = sensorintdeviceID;
                 parmss[1].Value = sensorCmdNumHex;
@@ -324,6 +331,7 @@ namespace WizepipesSocketServer
                 parmss[3].Value = sensorCapTimeMinute;
                 parmss[4].Value = sensorOpenTime;
                 parmss[5].Value = sensorCloseTime;
+                parmss[6].Value = IsCaptureNow;
 
                 try
                 {
@@ -351,18 +359,19 @@ namespace WizepipesSocketServer
         public static int[] readsensorcfg(int sensorintdeviceID)
         {
             MySQLDB.InitDb();
-            int[] sensorcfg = new int[5];
+            int[] sensorcfg = new int[6];
             int CmdNumHex = 0;
             int CapTimeHour = 0;
             int CapTimeMinute = 0;
             int OpenTime = 0;
             int CloseTime = 0;
+            int IsCaptureNow = 0;
             //从数据库中查找当前ID是否存在
             try
             {
                 DataSet ds1 = new DataSet("tsensorcfg");
                 string strSQL1 =
-                    "  SELECT CmdNumHex, CapTimeHour, CapTimeMinute, OpenTime, CloseTime FROM tsensorcfg where intdeviceID=" +
+                    "  SELECT CmdNumHex, CapTimeHour, CapTimeMinute, OpenTime, CloseTime, IsCaptureNow FROM tsensorcfg where intdeviceID=" +
                     sensorintdeviceID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
@@ -375,12 +384,14 @@ namespace WizepipesSocketServer
                         CapTimeMinute = (int)ds1.Tables[0].Rows[0][2];
                         OpenTime = (int)ds1.Tables[0].Rows[0][3];
                         CloseTime = (int)ds1.Tables[0].Rows[0][4];
+                        IsCaptureNow = (int)ds1.Tables[0].Rows[0][5];
 
                         sensorcfg[0] = CmdNumHex;
                         sensorcfg[1] = CapTimeHour;
                         sensorcfg[2] = CapTimeMinute;
                         sensorcfg[3] = OpenTime;
                         sensorcfg[4] = CloseTime;
+                        sensorcfg[5] = IsCaptureNow;
 
                         return sensorcfg;
                     }

@@ -26,6 +26,7 @@ namespace WizepipesSocketServer
     public struct Status
     {
         public bool IsSendDataToServer; //发送数据到服务器
+        public bool IsGetADNow;//是否属于立即采样
         public ClientStage clientStage;
         public AdStage adStage;
         public int currentsendbulk; //当前发送的包数
@@ -116,12 +117,31 @@ namespace WizepipesSocketServer
                 case 0x22:
                     if (datagramBytes[9] == 0x55)
                     {
-                        //dataitem.CmdStage = 1;
                         status.adStage = AdStage.AdFinished;
+                        NetDb.addsensorinfo(intDeviceID, strAddress, strAddress,
+                            status.HeartTime.ToString(),
+                            Convert.ToInt32(status.clientStage), Convert.ToInt32(status.adStage));
+
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--AD采样结束" + "\n";
                         Console.WriteLine(msg);
                         Log.Debug(msg);
+                        if (status.IsGetADNow == true)
+                        {
+                            byte[] CmdAD = { 0xA5, 0xA5, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x06, 0x02, 0x57, 0x00, 0x00, 0x03, 0xE8, 0xFF, 0x5A, 0x5A };
+                            status.IsSendDataToServer = true;
+                            status.currentsendbulk = 0;
+                            status.datalength = 0;
+                            status.adStage = AdStage.AdUploading;
+                            NetDb.addsensorinfo(intDeviceID, strAddress, strAddress,
+                                status.HeartTime.ToString(),
+                                Convert.ToInt32(status.clientStage), Convert.ToInt32(status.adStage));
+
+                            sendDataQueue.Enqueue(CmdAD);
+                            msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                                  intDeviceID + "--AD采样结束,属于立即采样，马上进行上传" + "\n";
+                            Log.Debug(msg);
+                        }
                     }
                     break;
 
@@ -146,7 +166,10 @@ namespace WizepipesSocketServer
                                       "设备号--" + intDeviceID + "--数据上传完毕" + "\n";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
-                                status.adStage = AdStage.AdStored;//上传完成，置空闲位
+                                status.adStage = AdStage.AdStored;//上传完成
+                                NetDb.addsensorinfo(intDeviceID, strAddress, strAddress,
+                                    status.HeartTime.ToString(),
+                                    Convert.ToInt32(status.clientStage), Convert.ToInt32(status.adStage));
                             }
                         }
                     }
@@ -171,6 +194,7 @@ namespace WizepipesSocketServer
                               intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
                         Console.WriteLine(msg);
                         Log.Debug(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, 2);
                     }
                     break;
 
@@ -296,6 +320,9 @@ namespace WizepipesSocketServer
                     Console.WriteLine("设备号：" + intDeviceID + "超时,服务器主动断开连接");
                     Log.Debug("设备号：" + intDeviceID + "超时,服务器主动断开连接");
                     status.clientStage = ClientStage.offLine;
+                    NetDb.addsensorinfo(intDeviceID, strAddress, strAddress,
+                        status.HeartTime.ToString(),
+                        Convert.ToInt32(status.clientStage), Convert.ToInt32(status.adStage));
                     CloseSocket();
                 }
             }
