@@ -200,14 +200,17 @@ namespace WizepipesSocketServer
 
                 case 0x27:
                     int[] gpsData = new int[23];
+                    double Latitude = 0;
+                    double Longitude = 0;
                     for (int i = 0; i < 23; i++)
                     {
-                        //gpsData[i] = dataitem.SingleBuffer[9 + i];
+                        gpsData[i] = datagramBytes[9 + i];
                     }
-                    //gpsDistance.getGPSData(gpsData, out dataitem.Latitude, out dataitem.Longitude);
-                    //msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--经度为：" + dataitem.Longitude + "纬度为：" + dataitem.Latitude + "\n";
+                    GPSDistance.getGPSData(gpsData, out Latitude, out Longitude);
+                    msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--经度为：" + Longitude + "纬度为：" + Latitude + "\n";
                     Console.WriteLine(msg);
-                    //ShowMsg(msg);
+                    Log.Debug(msg);
+                    //TODO:把经纬度写入数据库;在addsensorcfg后面加上IsGetGPSinfo，hex加到3
                     break;
 
                 case 0x29:
@@ -350,7 +353,7 @@ namespace WizepipesSocketServer
         /// </summary>
         /// <param name="value">int</param>
         /// <returns>byte[]</returns>
-        private static byte[] intToBytes(int value)
+        private byte[] intToBytes(int value)
         {
             byte[] src = new byte[2];
 
@@ -393,7 +396,7 @@ namespace WizepipesSocketServer
         }
 
         // 字节数组转16进制字符串 
-        private static string byteToHexStr(byte[] bytes)
+        private string byteToHexStr(byte[] bytes)
         {
             string returnStr = "";
             if (bytes != null)

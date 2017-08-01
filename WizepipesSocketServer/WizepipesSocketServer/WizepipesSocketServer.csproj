@@ -36,6 +36,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>thirdLibs\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="MyClassLibrary, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>thirdLibs\MyClassLibrary.dll</HintPath>
+    </Reference>
     <Reference Include="MySql.Data, Version=6.6.5.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>thirdLibs\MySql.Data.dll</HintPath>
@@ -56,6 +60,7 @@
   <ItemGroup>
     <Compile Include="CommandClass.cs" />
     <Compile Include="DataItem.cs" />
+    <Compile Include="GPSDistance.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -63,6 +68,8 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MySQLDB.cs" />
+    <Compile Include="Net_Analyze.cs" />
+    <Compile Include="Net_Analyze_DB.cs" />
     <Compile Include="Net_Device_DB.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -92,6 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="thirdLibs\log4net.dll" />
+    <Content Include="thirdLibs\MyClassLibrary.dll" />
     <Content Include="thirdLibs\MySql.Data.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

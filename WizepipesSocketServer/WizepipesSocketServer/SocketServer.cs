@@ -394,9 +394,14 @@ namespace WizepipesSocketServer
                         UploadData();
                         Log.Debug("开始上传");
                     }
-                    if (IsAutoTest == true)
+
+                    if (adStoredClinetNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
                     {
-                        if (adStoredClinetNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
+                        //test 分析数据
+                        int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
+                        Log.Debug("设备3号和4号的基点为：" + deviceDffset);
+
+                        if (IsAutoTest == true)
                         {
                             //开始上传
                             Console.WriteLine("AD数据存储完毕，重设时间");
@@ -457,12 +462,12 @@ namespace WizepipesSocketServer
                                 string msg = "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
-                            }                           
+                            }
 
                         }
 
                         if (cfg != null && cfg[5] == 1 && cfg[0] == 2)
-                        {                            
+                        {
                             dataItem.status.IsGetADNow = true;
                             SetCapTime(dataItem.intDeviceID);
                         }
