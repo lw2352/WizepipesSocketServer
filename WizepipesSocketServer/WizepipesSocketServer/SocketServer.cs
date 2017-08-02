@@ -19,7 +19,8 @@ namespace WizepipesSocketServer
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
         public static CmdItem cmdItem = new CmdItem();//实例化
-        public ArrayList AnalyzeList = new ArrayList();//待分析ID的可变长数组
+        //public ArrayList AnalyzeList = new ArrayList();//待分析ID的可变长数组
+        public List<int> AnalyzeList = new List<int>();
 
         public string ServerIP = "192.168.3.83";
         public int ServerPort = 8085;
@@ -41,7 +42,7 @@ namespace WizepipesSocketServer
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
         private const int constCapTimeCmdSendOK = 1;
-        private const int constAllCmdSendOK = 2; 
+        private const int constAllCmdSendOK = 2;
         //初始化服务器，给服务参数赋值
 
         #region get-set访问器（12个）
@@ -171,7 +172,6 @@ namespace WizepipesSocketServer
                 htClient.Clear();
                 htSendCmd.Clear();
                 Log.Debug("服务关闭成功");
-                //TODO:GC
             }
             catch (Exception ex)
             {
@@ -319,6 +319,8 @@ namespace WizepipesSocketServer
             }
         }
 
+
+
         //7-22 处理接收队列
         private void CheckRecDataQueue(object state)
         {
@@ -404,10 +406,7 @@ namespace WizepipesSocketServer
                     //上传完成，准备分析
                     if ((AnalyzeList.Count >= htClient.Count - maxBadClient) && (AnalyzeList.Count > maxBadClient))//没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                     {
-                        //test 分析数据
-                        //TODO:对所有上传完成的设备进行基点分析，把结果写入数据库
-                        int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
-                        Log.Debug("设备3号和4号的基点为：" + deviceDffset);
+                        AnalyzeData();//分析AD数据并保存结果到数据库
 
                         if (IsAutoTest == true)
                         {
@@ -483,7 +482,7 @@ namespace WizepipesSocketServer
 
                         //立即采样（加3分钟）流程
                         if (cfg != null && cfg[5] == 1 && cfg[0] == constAllCmdSendOK)
-                        {   
+                        {
                             SetCapTime(dataItem.intDeviceID);
                         }
                         else if (cfg != null && cfg[5] == 1 && cfg[0] == constCapTimeCmdSendOK)
@@ -512,6 +511,23 @@ namespace WizepipesSocketServer
                 Thread.Sleep(checkDataBaseQueueTimeInterval);
             }
             CheckDataBaseQueueResetEvent.Set();
+        }
+
+        //分析AnalyzeList中的数据//TODO:待测试
+        private void AnalyzeData()
+        {
+            //对所有上传完成的设备进行基点分析，把结果写入数据库
+            for (int i = 0; i < AnalyzeList.Count - 1; i++)//at least 2 device
+            {
+                int idA = AnalyzeList[i];
+                for (int j = i; j < AnalyzeList.Count; j++)
+                {
+                    int idB = AnalyzeList[j];
+                    int deviceDffset = Net_Analyze_DB.autoAnalyze(idA, idB);
+                    Net_Analyze_DB.writeAnalyzeResult(idA, idB, deviceDffset, DateTime.Now.ToString(), 0);
+                    Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + deviceDffset);
+                }
+            }
         }
 
         //检查哈希表中是否已存在当前ID

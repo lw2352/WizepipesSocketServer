@@ -101,6 +101,7 @@ namespace WizepipesSocketServer
 
         private void buttonAnalyze_Click(object sender, EventArgs e)
         {
+            //test
             int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
             Net_Analyze_DB.writeAnalyzeResult(3, 4, deviceDffset, DateTime.Now.ToString(), 0);
             Console.WriteLine("设备3号和4号的基点为：" + deviceDffset);
