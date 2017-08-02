@@ -129,6 +129,45 @@ namespace WizepipesSocketServer
 
         }
 
+        public static string UpdateSensorGPSinfo(int sensorintdeviceID, double Longitude, double Latitude)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL =
+                "Update tsensorinfo SET Longitude=?sensorLongitude, Latitude=?sensorLatitude WHERE intdeviceID=?sensorintdeviceID";
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorLongitude", MySqlDbType.Double),
+                new MySqlParameter("?sensorLatitude", MySqlDbType.Double),
+            };
+            parmss[0].Value = sensorintdeviceID;
+            parmss[1].Value = Longitude;
+            parmss[2].Value = Latitude;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
         public static string addsensorad(int sensorintdeviceID, string sensorDataDate, string sensorDataPath)
         {
             MySQLDB.InitDb();
@@ -359,19 +398,20 @@ namespace WizepipesSocketServer
         public static int[] readsensorcfg(int sensorintdeviceID)
         {
             MySQLDB.InitDb();
-            int[] sensorcfg = new int[6];
+            int[] sensorcfg = new int[7];
             int CmdNumHex = 0;
             int CapTimeHour = 0;
             int CapTimeMinute = 0;
             int OpenTime = 0;
             int CloseTime = 0;
             int IsCaptureNow = 0;
+            int IsGetGPSinfo = 0;
             //从数据库中查找当前ID是否存在
             try
             {
                 DataSet ds1 = new DataSet("tsensorcfg");
                 string strSQL1 =
-                    "  SELECT CmdNumHex, CapTimeHour, CapTimeMinute, OpenTime, CloseTime, IsCaptureNow FROM tsensorcfg where intdeviceID=" +
+                    "  SELECT CmdNumHex, CapTimeHour, CapTimeMinute, OpenTime, CloseTime, IsCaptureNow, IsGetGPSinfo FROM tsensorcfg where intdeviceID=" +
                     sensorintdeviceID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
@@ -385,6 +425,7 @@ namespace WizepipesSocketServer
                         OpenTime = (int)ds1.Tables[0].Rows[0][3];
                         CloseTime = (int)ds1.Tables[0].Rows[0][4];
                         IsCaptureNow = (int)ds1.Tables[0].Rows[0][5];
+                        IsGetGPSinfo = (int)ds1.Tables[0].Rows[0][6];
 
                         sensorcfg[0] = CmdNumHex;
                         sensorcfg[1] = CapTimeHour;
@@ -392,6 +433,7 @@ namespace WizepipesSocketServer
                         sensorcfg[3] = OpenTime;
                         sensorcfg[4] = CloseTime;
                         sensorcfg[5] = IsCaptureNow;
+                        sensorcfg[6] = IsGetGPSinfo;
 
                         return sensorcfg;
                     }
@@ -424,6 +466,43 @@ namespace WizepipesSocketServer
             };
             parmss[0].Value = sensorintdeviceID;
             parmss[1].Value = cmdNumHex;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
+        public static string UpdateSensorCfgBySetIsGetGpsInfo(int sensorintdeviceID, int IsGetGPSinfo)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL =
+                "Update tsensorcfg SET IsGetGPSinfo=?sensorIsGetGPSinfo WHERE intdeviceID=?sensorintdeviceID";
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorIsGetGPSinfo", MySqlDbType.Int32),
+            };
+            parmss[0].Value = sensorintdeviceID;
+            parmss[1].Value = IsGetGPSinfo;
 
             try
             {

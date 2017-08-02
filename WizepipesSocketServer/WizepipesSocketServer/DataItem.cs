@@ -32,7 +32,7 @@ namespace WizepipesSocketServer
         public int currentsendbulk; //当前发送的包数
         public int datalength;  //已保存的AD数据长度
         public byte[] byteAllData; //所有数据，算一个完整的数据
-        public DateTime HeartTime;
+        public DateTime HeartTime; //上一次心跳包发上来的时间
     };
 
     class DataItem
@@ -210,7 +210,19 @@ namespace WizepipesSocketServer
                     msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" + intDeviceID + "--经度为：" + Longitude + "纬度为：" + Latitude + "\n";
                     Console.WriteLine(msg);
                     Log.Debug(msg);
-                    //TODO:把经纬度写入数据库;在addsensorcfg后面加上IsGetGPSinfo，hex加到3
+
+                    //把经纬度写入数据库;在addsensorcfg后面加上IsGetGPSinfo，hex加到3
+                    if (Longitude > 0 && Latitude > 0)
+                    {
+                        NetDb.UpdateSensorGPSinfo(intDeviceID, Longitude, Latitude);
+                    }
+                    else
+                    {
+                        NetDb.UpdateSensorGPSinfo(intDeviceID, 0, 0);
+                    }
+                    //经纬度信息读取成功,把标志位复位
+                    NetDb.UpdateSensorCfgBySetIsGetGpsInfo(intDeviceID, 0);
+                    Log.Debug("经纬度信息读取成功,把标志位复位");
                     break;
 
                 case 0x29:
@@ -246,8 +258,7 @@ namespace WizepipesSocketServer
                     status.HeartTime = DateTime.Now;
                     Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") +"设备号--" +
                         intDeviceID + "收到心跳包\r\n");
-                    Log.Debug("设备号--" +
-                              intDeviceID + "收到心跳包\r\n");
+                    //Log.Debug("设备号--" +intDeviceID + "收到心跳包\r\n");
                     break;
                 default:
                     Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "收到其他类型数据\r\n");

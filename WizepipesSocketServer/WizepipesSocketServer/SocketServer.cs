@@ -19,6 +19,7 @@ namespace WizepipesSocketServer
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
         public static CmdItem cmdItem = new CmdItem();//实例化
+        public ArrayList AnalyzeList = new ArrayList();//待分析ID的可变长数组
 
         public string ServerIP = "192.168.3.83";
         public int ServerPort = 8085;
@@ -39,6 +40,8 @@ namespace WizepipesSocketServer
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);//处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
+        private const int constCapTimeCmdSendOK = 1;
+        private const int constAllCmdSendOK = 2; 
         //初始化服务器，给服务参数赋值
 
         #region get-set访问器（12个）
@@ -349,7 +352,9 @@ namespace WizepipesSocketServer
                 try
                 {
                     int adFinishedClientNum = 0;//发送采样完成信息的设备数
-                    int adStoredClinetNum = 0;
+                    int adStoredClinetNum = 0;//AD数据已存储的设备数,也是在线的设备
+                    int adUploadingClinetNum = 0;//所有在线设备包括传完和正在传的设备
+
                     string deleteAddress = null;
                     foreach (DataItem dataItem in htClient.Values)
                     {
@@ -363,9 +368,15 @@ namespace WizepipesSocketServer
                         {
                             adFinishedClientNum++;
                         }
+                        if (dataItem.status.adStage == AdStage.AdUploading)
+                        {
+                            adUploadingClinetNum++;
+                        }
+
                         if (dataItem.status.adStage == AdStage.AdStored)
                         {
                             adStoredClinetNum++;
+                            AnalyzeList.Add(dataItem.intDeviceID);//添加id号
                             if (dataItem.status.IsGetADNow == false && IsAutoTest == false)
                             {
                                 dataItem.status.adStage = AdStage.Idle;
@@ -380,13 +391,14 @@ namespace WizepipesSocketServer
                                 dataItem.sendDataQueue.Enqueue(htsendCmdQueue.Dequeue());//复制数据
                             }
                         }
-                    }
+                    }//end of foreach
                     if (deleteAddress != null && htClient.ContainsKey(deleteAddress))
                     {
                         htClient.Remove(deleteAddress);
                         Log.Debug(deleteAddress + "是无效项，从哈希表中删除");
                     }
 
+                    //采集完成，准备上传
                     if (adFinishedClientNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
                     {
                         //开始上传
@@ -394,8 +406,8 @@ namespace WizepipesSocketServer
                         UploadData();
                         Log.Debug("开始上传");
                     }
-
-                    if (adStoredClinetNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
+                    //上传完成，准备分析
+                    if ((AnalyzeList.Count >= htClient.Count - maxBadClient) && (AnalyzeList.Count > maxBadClient))//没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                     {
                         //test 分析数据
                         int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
@@ -424,7 +436,7 @@ namespace WizepipesSocketServer
         //读取数据库命令线程
         public void CheckDataBaseQueue(object state)
         {
-            int[] cfg = new int[6];//存储从数据库读取的设备配置参数
+            int[] cfg = new int[7];//存储从数据库读取的设备配置参数
             // TODO:收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
             while (IsServerOpen)
             {
@@ -466,12 +478,19 @@ namespace WizepipesSocketServer
 
                         }
 
-                        if (cfg != null && cfg[5] == 1 && cfg[0] == 2)
+                        //获取设备的GPS经纬度
+                        if (cfg != null && cfg[6] == 1 && cfg[0] == constAllCmdSendOK)
                         {
                             dataItem.status.IsGetADNow = true;
+                            AddCmdToQueue(dataItem.intDeviceID, cmdItem.CmdReadGPSData);
+                        }
+
+                        //立即采样（加3分钟）流程
+                        if (cfg != null && cfg[5] == 1 && cfg[0] == constAllCmdSendOK)
+                        {   
                             SetCapTime(dataItem.intDeviceID);
                         }
-                        else if (cfg != null && cfg[5] == 1 && cfg[0] == 1)
+                        else if (cfg != null && cfg[5] == 1 && cfg[0] == constCapTimeCmdSendOK)
                         {
                             //立即采样时间设置成功,把标志位复位
                             NetDb.addsensorcfg(dataItem.intDeviceID, 2, cfg[1], cfg[2], cfg[3], cfg[4], 0);

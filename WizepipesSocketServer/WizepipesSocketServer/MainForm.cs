@@ -18,6 +18,8 @@ namespace WizepipesSocketServer
         {
             InitializeComponent();
             ReadCfg();
+            int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
+            Console.WriteLine("设备3号和4号的基点为：" + deviceDffset);
         }
 
         public void ReadCfg()
