@@ -526,8 +526,11 @@ namespace WizepipesSocketServer
                     int deviceDffset = Net_Analyze_DB.autoAnalyze(idA, idB);
                     Net_Analyze_DB.writeAnalyzeResult(idA, idB, deviceDffset, DateTime.Now.ToString(), 0);
                     Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + deviceDffset);
+                    Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + deviceDffset);
                 }
             }
+            AnalyzeList.Clear();
+            Console.WriteLine("分析完成,情况list");
         }
 
         //检查哈希表中是否已存在当前ID
