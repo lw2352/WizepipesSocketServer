@@ -18,8 +18,6 @@ namespace WizepipesSocketServer
         {
             InitializeComponent();
             ReadCfg();
-            int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
-            Console.WriteLine("设备3号和4号的基点为：" + deviceDffset);
         }
 
         public void ReadCfg()
@@ -43,7 +41,7 @@ namespace WizepipesSocketServer
             msg = "从appConfig读取到的配置信息是：" + "ServerIP:" + ConfigIp + "\r\nServerPort:" + ConfigPort + "\r\nbufferLength:" + ConfigbufferLength + "\r\nAdlength:" + ConfigAdlength +
                   "\r\n接收数据线程休息时间："+ConfigcheckRecDataQueueTimeInterval + "\r\n发送数据线程休息时间：" + ConfigcheckSendDataQueueTimeInterval +
                   "\r\n读取数据库线程休息时间：" + ConfigcheckDataBaseQueueTimeInterval
-            +"\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长："+ConfigmaxTimeOut + "\r\n允许故障设备数：" + ConfigmaxBadClient + "\r\n是否自动测试："+ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB+"自动采样的间隔时长"+ ConfigCapNextTime;
+            +"\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长："+ConfigmaxTimeOut + "\r\n允许故障设备数：" + ConfigmaxBadClient + "\r\n是否自动测试："+ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB+ "\r\n自动采样的间隔时长" + ConfigCapNextTime;
 
             richTextBox1.AppendText(msg);
             //共12+1个
@@ -99,6 +97,14 @@ namespace WizepipesSocketServer
         private void buttonClear_Click(object sender, EventArgs e)
         {
             richTextBox1.Clear();
+        }
+
+        private void buttonAnalyze_Click(object sender, EventArgs e)
+        {
+            int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
+            Net_Analyze_DB.writeAnalyzeResult(3, 4, deviceDffset, DateTime.Now.ToString(), 0);
+            Console.WriteLine("设备3号和4号的基点为：" + deviceDffset);
+            richTextBox1.AppendText("设备3号和4号的基点为：" + deviceDffset);
         }
     }
 }

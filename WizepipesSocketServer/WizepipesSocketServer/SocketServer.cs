@@ -353,7 +353,6 @@ namespace WizepipesSocketServer
                 {
                     int adFinishedClientNum = 0;//发送采样完成信息的设备数
                     int adStoredClinetNum = 0;//AD数据已存储的设备数,也是在线的设备
-                    int adUploadingClinetNum = 0;//所有在线设备包括传完和正在传的设备
 
                     string deleteAddress = null;
                     foreach (DataItem dataItem in htClient.Values)
@@ -367,10 +366,6 @@ namespace WizepipesSocketServer
                         if (dataItem.status.adStage == AdStage.AdFinished)
                         {
                             adFinishedClientNum++;
-                        }
-                        if (dataItem.status.adStage == AdStage.AdUploading)
-                        {
-                            adUploadingClinetNum++;
                         }
 
                         if (dataItem.status.adStage == AdStage.AdStored)
@@ -410,6 +405,7 @@ namespace WizepipesSocketServer
                     if ((AnalyzeList.Count >= htClient.Count - maxBadClient) && (AnalyzeList.Count > maxBadClient))//没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                     {
                         //test 分析数据
+                        //TODO:对所有上传完成的设备进行基点分析，把结果写入数据库
                         int deviceDffset = Net_Analyze_DB.autoAnalyze(3, 4);
                         Log.Debug("设备3号和4号的基点为：" + deviceDffset);
 
@@ -437,7 +433,7 @@ namespace WizepipesSocketServer
         public void CheckDataBaseQueue(object state)
         {
             int[] cfg = new int[7];//存储从数据库读取的设备配置参数
-            // TODO:收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
+            //收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
             while (IsServerOpen)
             {
                 try

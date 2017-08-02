@@ -124,7 +124,7 @@ namespace WizepipesSocketServer
                 pathB = pathB.Replace("\\\\", "\\");
 
                 getDataA(pathA);
-                getDataA(pathB);
+                getDataB(pathB);
                 getAnalyzeDataC();
 
                 return g_OffSet;

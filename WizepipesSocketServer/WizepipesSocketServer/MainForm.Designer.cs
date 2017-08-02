@@ -31,14 +31,15 @@
             this.buttonOpenServer = new System.Windows.Forms.Button();
             this.buttonUpload = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.checkBoxAutoTest = new System.Windows.Forms.CheckBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.buttonClear = new System.Windows.Forms.Button();
             this.buttonViewClientInfo = new System.Windows.Forms.Button();
             this.buttonCloseServer = new System.Windows.Forms.Button();
             this.buttonCapNow = new System.Windows.Forms.Button();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.checkBoxAutoTest = new System.Windows.Forms.CheckBox();
+            this.buttonAnalyze = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -65,6 +66,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.buttonAnalyze);
             this.groupBox1.Controls.Add(this.checkBoxAutoTest);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.buttonClear);
@@ -80,6 +82,25 @@
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "服务器配置";
+            // 
+            // checkBoxAutoTest
+            // 
+            this.checkBoxAutoTest.AutoSize = true;
+            this.checkBoxAutoTest.Location = new System.Drawing.Point(27, 53);
+            this.checkBoxAutoTest.Name = "checkBoxAutoTest";
+            this.checkBoxAutoTest.Size = new System.Drawing.Size(72, 16);
+            this.checkBoxAutoTest.TabIndex = 31;
+            this.checkBoxAutoTest.Text = "自动测试";
+            this.checkBoxAutoTest.UseVisualStyleBackColor = true;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(12, 25);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(107, 12);
+            this.label1.TabIndex = 29;
+            this.label1.Text = "打开或关闭服务器:";
             // 
             // buttonClear
             // 
@@ -142,24 +163,15 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "数据显示";
             // 
-            // label1
+            // buttonAnalyze
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 25);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(107, 12);
-            this.label1.TabIndex = 29;
-            this.label1.Text = "打开或关闭服务器:";
-            // 
-            // checkBoxAutoTest
-            // 
-            this.checkBoxAutoTest.AutoSize = true;
-            this.checkBoxAutoTest.Location = new System.Drawing.Point(27, 53);
-            this.checkBoxAutoTest.Name = "checkBoxAutoTest";
-            this.checkBoxAutoTest.Size = new System.Drawing.Size(72, 16);
-            this.checkBoxAutoTest.TabIndex = 31;
-            this.checkBoxAutoTest.Text = "自动测试";
-            this.checkBoxAutoTest.UseVisualStyleBackColor = true;
+            this.buttonAnalyze.Location = new System.Drawing.Point(129, 106);
+            this.buttonAnalyze.Name = "buttonAnalyze";
+            this.buttonAnalyze.Size = new System.Drawing.Size(75, 23);
+            this.buttonAnalyze.TabIndex = 32;
+            this.buttonAnalyze.Text = "分析";
+            this.buttonAnalyze.UseVisualStyleBackColor = true;
+            this.buttonAnalyze.Click += new System.EventHandler(this.buttonAnalyze_Click);
             // 
             // MainForm
             // 
@@ -190,6 +202,7 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox checkBoxAutoTest;
+        private System.Windows.Forms.Button buttonAnalyze;
     }
 }
 

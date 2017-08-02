@@ -23,7 +23,7 @@ namespace WizepipesSocketServer
                 if (ds != null)
                 {
                     if (ds.Tables[0].Rows.Count > 0)
-                        // 有数据集
+                    // 有数据集
                     {
                         sensorid = ds.Tables[0].Rows[0][0].ToString();
                     }
@@ -46,7 +46,7 @@ namespace WizepipesSocketServer
                     if (ds1 != null)
                     {
                         if (ds1.Tables[0].Rows.Count > 0)
-                            // 有数据集
+                        // 有数据集
                         {
                             sensorid = ds1.Tables[0].Rows[0][0].ToString();
                             //查询子表数据
@@ -58,7 +58,7 @@ namespace WizepipesSocketServer
                                 if (ds2 != null)
                                 {
                                     if (ds2.Tables[0].Rows.Count > 0)
-                                        // 有数据集
+                                    // 有数据集
                                     {
                                         string path = null;
                                         path = ds2.Tables[0].Rows[0][0].ToString();
@@ -101,7 +101,7 @@ namespace WizepipesSocketServer
                 if (ds != null)
                 {
                     if (ds.Tables[0].Rows.Count > 0)
-                        // 有数据集
+                    // 有数据集
                     {
                         sensorid = ds.Tables[0].Rows[0][0].ToString();
                     }
@@ -124,7 +124,7 @@ namespace WizepipesSocketServer
                     if (ds1 != null)
                     {
                         if (ds1.Tables[0].Rows.Count > 0)
-                            // 有数据集
+                        // 有数据集
                         {
                             sensorid = ds1.Tables[0].Rows[0][0].ToString();
                             //查询子表数据
@@ -136,7 +136,7 @@ namespace WizepipesSocketServer
                                 if (ds2 != null)
                                 {
                                     if (ds2.Tables[0].Rows.Count > 0)
-                                        // 有数据集
+                                    // 有数据集
                                     {
                                         string date = null;
                                         date = ds2.Tables[0].Rows[0][0].ToString();
@@ -163,6 +163,57 @@ namespace WizepipesSocketServer
             }
             else return "fail";
         }
+
+        //把分析结果写入数据库保存 8-2
+        public static string writeAnalyzeResult(int SensorAID, int SensorBID,
+            int AnalyzeResult, string AnalyzeDate, int AnalyzePipe)
+        {
+            MySQLDB.InitDb();
+            string sensorid = "0";
+
+            DataSet ds = new DataSet("dssensorinfo");
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL = " insert into tsensorresult (SensorAID,SensorBID,AnalyzeResult,AnalyzeDate,AnalyzePipe) values" +
+                     "(?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe);";
+
+            parmss = new MySqlParameter[]
+            {
+                    new MySqlParameter("?sensorSensorAID", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorSensorBID", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorAnalyzeResult", MySqlDbType.Int32),
+                    new MySqlParameter("?sensorAnalyzeDate", MySqlDbType.DateTime),
+                    new MySqlParameter("?sensorAnalyzePipe", MySqlDbType.Int32)
+            };
+            parmss[0].Value = SensorAID;
+            parmss[1].Value = SensorBID;
+            parmss[2].Value = AnalyzeResult;
+            parmss[3].Value = Convert.ToDateTime(AnalyzeDate);
+            parmss[4].Value = AnalyzePipe;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail"; //数据库异常
+            }
+        }
+
+
 
         //"获取path对应的归一化DataA")]//add 3-28
         public static double[] readDataA(string path)
