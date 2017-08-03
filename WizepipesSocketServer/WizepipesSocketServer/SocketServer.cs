@@ -530,7 +530,7 @@ namespace WizepipesSocketServer
                 }
             }
             AnalyzeList.Clear();
-            Console.WriteLine("分析完成,情况list");
+            Console.WriteLine("分析完成,清空list");
         }
 
         //检查哈希表中是否已存在当前ID
@@ -646,6 +646,13 @@ namespace WizepipesSocketServer
 
         public string ViewClientInfo()
         {
+            /*AnalyzeList.Add(1);
+            AnalyzeList.Add(2);
+            AnalyzeList.Add(3);
+            AnalyzeList.Add(4);
+            AnalyzeList.Add(5);
+            AnalyzeData();*/
+
             string msg = null;
             foreach (DataItem dataItem in htClient.Values)
             {

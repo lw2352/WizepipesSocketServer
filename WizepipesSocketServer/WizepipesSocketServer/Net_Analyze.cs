@@ -115,7 +115,7 @@ namespace WizepipesSocketServer
 
             double t = ts.TotalMinutes;
 
-            if (-6 < t && t < 6)
+            if (-30 < t && t < 30)
             {
                 string pathA = Net_Analyze_DB.readDataPath(idA);
                 pathA = pathA.Replace("\\\\", "\\");
