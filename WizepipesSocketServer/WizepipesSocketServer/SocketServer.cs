@@ -520,7 +520,7 @@ namespace WizepipesSocketServer
             for (int i = 0; i < AnalyzeList.Count - 1; i++)//at least 2 device
             {
                 int idA = AnalyzeList[i];
-                for (int j = i; j < AnalyzeList.Count; j++)
+                for (int j = i+1; j < AnalyzeList.Count; j++)
                 {
                     int idB = AnalyzeList[j];
                     int deviceDffset = Net_Analyze_DB.autoAnalyze(idA, idB);
