@@ -373,7 +373,10 @@ namespace WizepipesSocketServer
                         if (dataItem.status.adStage == AdStage.AdStored)
                         {
                             adStoredClinetNum++;
-                            AnalyzeList.Add(dataItem.intDeviceID);//添加id号
+                            if (!AnalyzeList.Contains(dataItem.intDeviceID)) //避免重复添加
+                            {
+                                AnalyzeList.Add(dataItem.intDeviceID); //添加id号
+                            }
                             if (dataItem.status.IsGetADNow == false && IsAutoTest == false)
                             {
                                 dataItem.status.adStage = AdStage.Idle;
@@ -646,13 +649,6 @@ namespace WizepipesSocketServer
 
         public string ViewClientInfo()
         {
-            /*AnalyzeList.Add(1);
-            AnalyzeList.Add(2);
-            AnalyzeList.Add(3);
-            AnalyzeList.Add(4);
-            AnalyzeList.Add(5);
-            AnalyzeData();*/
-
             string msg = null;
             foreach (DataItem dataItem in htClient.Values)
             {
