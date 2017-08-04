@@ -407,7 +407,7 @@ namespace WizepipesSocketServer
                     }
 
                     //采集完成，准备上传
-                    if (adFinishedClientNum >= (htClient.Count - maxBadClient) && (htClient.Count > maxBadClient))
+                    if (adFinishedClientNum >= (htClient.Count - offlineClientNum - maxBadClient) && (adFinishedClientNum > maxBadClient))
                     {
                         //开始上传
                         Console.WriteLine("开始上传");
