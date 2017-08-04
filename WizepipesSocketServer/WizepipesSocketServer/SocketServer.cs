@@ -354,6 +354,7 @@ namespace WizepipesSocketServer
                 try
                 {
                     int adFinishedClientNum = 0;//发送采样完成信息的设备数
+                    int offlineClientNum = 0;//已离线设备（超过3分钟没有连上）
                     int adUploadingAndOnlineClinetNum = 0;//AD数据已存储的设备数,也是在线的设备
 
                     string deleteAddress = null;
@@ -368,6 +369,10 @@ namespace WizepipesSocketServer
                         if (dataItem.status.adStage == AdStage.AdFinished)
                         {
                             adFinishedClientNum++;
+                        }
+                        if (dataItem.status.clientStage == ClientStage.offLine)
+                        {
+                            offlineClientNum++;
                         }
                         if (dataItem.status.adStage == AdStage.AdUploading &&
                             dataItem.status.clientStage == ClientStage.idle) //在线且没有上传完毕的设备数要为0，一定要等，才能进行下一步
@@ -410,7 +415,7 @@ namespace WizepipesSocketServer
                         Log.Debug("开始上传");
                     }
                     //上传完成，准备分析
-                    if ((AnalyzeList.Count >= htClient.Count - maxBadClient) && (AnalyzeList.Count > maxBadClient) && adUploadingAndOnlineClinetNum == 0)//没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
+                    if ((AnalyzeList.Count >= htClient.Count - offlineClientNum - maxBadClient) && (AnalyzeList.Count > maxBadClient) && adUploadingAndOnlineClinetNum == 0)//没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                     {
                         AnalyzeData();//分析AD数据并保存结果到数据库
 
