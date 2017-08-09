@@ -528,7 +528,7 @@ namespace WizepipesSocketServer
             CheckDataBaseQueueResetEvent.Set();
         }
 
-        //分析AnalyzeList中的数据//TODO:待测试
+        //分析AnalyzeList中的数据
         private void AnalyzeData()
         {
             //对所有上传完成的设备进行基点分析，把结果写入数据库

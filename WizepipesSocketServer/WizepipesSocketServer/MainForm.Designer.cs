@@ -31,6 +31,7 @@
             this.buttonOpenServer = new System.Windows.Forms.Button();
             this.buttonUpload = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.buttonAnalyze = new System.Windows.Forms.Button();
             this.checkBoxAutoTest = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.buttonClear = new System.Windows.Forms.Button();
@@ -39,7 +40,6 @@
             this.buttonCapNow = new System.Windows.Forms.Button();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.buttonAnalyze = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -82,6 +82,16 @@
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "服务器配置";
+            // 
+            // buttonAnalyze
+            // 
+            this.buttonAnalyze.Location = new System.Drawing.Point(129, 106);
+            this.buttonAnalyze.Name = "buttonAnalyze";
+            this.buttonAnalyze.Size = new System.Drawing.Size(75, 23);
+            this.buttonAnalyze.TabIndex = 32;
+            this.buttonAnalyze.Text = "分析";
+            this.buttonAnalyze.UseVisualStyleBackColor = true;
+            this.buttonAnalyze.Click += new System.EventHandler(this.buttonAnalyze_Click);
             // 
             // checkBoxAutoTest
             // 
@@ -162,16 +172,6 @@
             this.groupBox2.TabIndex = 29;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "数据显示";
-            // 
-            // buttonAnalyze
-            // 
-            this.buttonAnalyze.Location = new System.Drawing.Point(129, 106);
-            this.buttonAnalyze.Name = "buttonAnalyze";
-            this.buttonAnalyze.Size = new System.Drawing.Size(75, 23);
-            this.buttonAnalyze.TabIndex = 32;
-            this.buttonAnalyze.Text = "分析";
-            this.buttonAnalyze.UseVisualStyleBackColor = true;
-            this.buttonAnalyze.Click += new System.EventHandler(this.buttonAnalyze_Click);
             // 
             // MainForm
             // 
