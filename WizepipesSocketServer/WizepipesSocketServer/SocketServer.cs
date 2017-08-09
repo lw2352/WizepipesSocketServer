@@ -486,14 +486,14 @@ namespace WizepipesSocketServer
 
                         //获取设备的GPS经纬度
                         if (cfg != null && cfg[6] == 1 && cfg[0] == constAllCmdSendOK)
-                        {
-                            dataItem.status.IsGetADNow = true;
+                        {                           
                             AddCmdToQueue(dataItem.intDeviceID, cmdItem.CmdReadGPSData);
                         }
 
                         //立即采样（加3分钟）流程
                         if (cfg != null && cfg[5] == 1 && cfg[0] == constAllCmdSendOK)
                         {
+                            dataItem.status.IsGetADNow = true;
                             SetCapTime(dataItem.intDeviceID);
                         }
                         else if (cfg != null && cfg[5] == 1 && cfg[0] == constCapTimeCmdSendOK)
@@ -510,6 +510,10 @@ namespace WizepipesSocketServer
                             dataItem.status.IsGetADNow = false;
                             dataItem.status.adStage = AdStage.Idle;
                             Log.Debug("立即采样完成后，重新设置一次采样时刻");
+                            //adstage的状态变化太快的话，前台不能从数据库检测到
+                            //NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
+                                //dataItem.status.HeartTime.ToString(),
+                                //Convert.ToInt32(dataItem.status.clientStage), Convert.ToInt32(dataItem.status.adStage));
                         }
 
                     }//end of foreach

@@ -364,7 +364,7 @@ namespace WizepipesSocketServer
         /// </summary>
         /// <param name="value">int</param>
         /// <returns>byte[]</returns>
-        private byte[] intToBytes(int value)
+        private  byte[] intToBytes(int value)
         {
             byte[] src = new byte[2];
 
