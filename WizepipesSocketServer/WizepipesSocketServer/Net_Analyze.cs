@@ -105,31 +105,57 @@ namespace WizepipesSocketServer
             return g_OffSet;
         }
 
-        public static int AutoAnalyze(int idA, int idB)
+        public static List<string> AutoAnalyze(int idA, int idB)
         {
+            List<string> resultList = new List<string>();//计算结果列表
+
             string dateA = Net_Analyze_DB.readDataDate(idA);
             string dateB = Net_Analyze_DB.readDataDate(idB);
-            DateTime dt1 = DateTime.Parse(dateA);
-            DateTime dt2 = DateTime.Parse(dateB);
-            TimeSpan ts = dt1.Subtract(dt2);
-
-            double t = ts.TotalMinutes;
-
-            if (-30 < t && t < 30)
+            if (dateA != "fail" && dateB != "fail")
             {
-                string pathA = Net_Analyze_DB.readDataPath(idA);
-                pathA = pathA.Replace("\\\\", "\\");
+                DateTime dt1 = DateTime.Parse(dateA);
+                DateTime dt2 = DateTime.Parse(dateB);
+                TimeSpan ts = dt1.Subtract(dt2);
 
-                string pathB = Net_Analyze_DB.readDataPath(idB);
-                pathB = pathB.Replace("\\\\", "\\");
+                double t = ts.TotalMinutes;
 
-                getDataA(pathA);
-                getDataB(pathB);
-                getAnalyzeDataC();
+                if (t < 10)
+                {
+                    string pathA = Net_Analyze_DB.readDataPath(idA);
+                    pathA = pathA.Replace("\\\\", "\\");
 
-                return g_OffSet;
+                    string pathB = Net_Analyze_DB.readDataPath(idB);
+                    pathB = pathB.Replace("\\\\", "\\");
+
+                    //计算的同时调用画图
+                    string resultA = ZedToPng.SaveDataToPng(getDataA(pathA), idA);
+                    string resultB = ZedToPng.SaveDataToPng(getDataB(pathB), idB);
+                    string resultC = ZedToPng.SaveDataToPng(getAnalyzeDataC(), 0);
+
+                    string offSet = g_OffSet.ToString();
+
+                    resultList.Add(offSet);
+                    resultList.Add(resultA);
+                    resultList.Add(resultB);
+                    resultList.Add(resultC);
+                    //return resultList;
+                }
+                else
+                {
+                    resultList.Add("fail");
+                    resultList.Add("fail");
+                    resultList.Add("fail");
+                    resultList.Add("fail");
+                }
             }
-            return 0;
+            else
+            {
+                resultList.Add("fail");
+                resultList.Add("fail");
+                resultList.Add("fail");
+                resultList.Add("fail");
+            }
+            return resultList;
         }
     }
 }

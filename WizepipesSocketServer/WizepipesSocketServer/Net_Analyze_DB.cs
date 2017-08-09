@@ -166,7 +166,7 @@ namespace WizepipesSocketServer
 
         //把分析结果写入数据库保存 8-2
         public static string writeAnalyzeResult(int SensorAID, int SensorBID,
-            int AnalyzeResult, string AnalyzeDate, int AnalyzePipe)
+            string AnalyzeResult, string AnalyzeDate, int AnalyzePipe, string pathA, string pathB, string pathC)
         {
             MySQLDB.InitDb();
             string sensorid = "0";
@@ -176,22 +176,28 @@ namespace WizepipesSocketServer
             MySqlParameter[] parmss = null;
             string strSQL = "";
             bool IsDelSuccess = false;
-            strSQL = " insert into tsensorresult (SensorAID,SensorBID,AnalyzeResult,AnalyzeDate,AnalyzePipe) values" +
-                     "(?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe);";
+            strSQL = " insert into tsensorresult (SensorAID,SensorBID,AnalyzeResult,AnalyzeDate,AnalyzePipe,pathA, pathB, pathC) values" +
+                     "(?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe, ?sensorpathA, ?sensorpathB, ?sensorpathC);";
 
             parmss = new MySqlParameter[]
             {
-                    new MySqlParameter("?sensorSensorAID", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorSensorBID", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorAnalyzeResult", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorAnalyzeDate", MySqlDbType.DateTime),
-                    new MySqlParameter("?sensorAnalyzePipe", MySqlDbType.Int32)
+                new MySqlParameter("?sensorSensorAID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorSensorBID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorAnalyzeResult", MySqlDbType.VarChar),
+                new MySqlParameter("?sensorAnalyzeDate", MySqlDbType.DateTime),
+                new MySqlParameter("?sensorAnalyzePipe", MySqlDbType.Int32),
+                new MySqlParameter("?sensorpathA", MySqlDbType.VarChar),
+                new MySqlParameter("?sensorpathB", MySqlDbType.VarChar),
+                new MySqlParameter("?sensorpathC", MySqlDbType.VarChar)
             };
             parmss[0].Value = SensorAID;
             parmss[1].Value = SensorBID;
             parmss[2].Value = AnalyzeResult;
             parmss[3].Value = Convert.ToDateTime(AnalyzeDate);
             parmss[4].Value = AnalyzePipe;
+            parmss[5].Value = pathA;
+            parmss[6].Value = pathB;
+            parmss[7].Value = pathC;
 
             try
             {
@@ -244,10 +250,10 @@ namespace WizepipesSocketServer
         }
 
         //"AutoAnalyze")]//add 5-10
-        public static int autoAnalyze(int idA, int idB)
+        /*public static int autoAnalyze(int idA, int idB)
         {
             int offset = Net_Analyze.AutoAnalyze(idA, idB);//Net_Analyze.AutoAnalyze会调用DB中的读数据库函数
             return offset;
-        }
+        }*/
     }
 }

@@ -105,6 +105,7 @@
     <Content Include="thirdLibs\log4net.dll" />
     <Content Include="thirdLibs\MyClassLibrary.dll" />
     <Content Include="thirdLibs\MySql.Data.dll" />
+    <Content Include="thirdLibs\ZedGraph.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -19,8 +19,7 @@ namespace WizepipesSocketServer
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable();//intID--QueueCmd
         public static CmdItem cmdItem = new CmdItem();//实例化
-        //public ArrayList AnalyzeList = new ArrayList();//待分析ID的可变长数组
-        public List<int> AnalyzeList = new List<int>();
+        public List<int> AnalyzeList = new List<int>();//待分析ID的可变长数组
 
         public string ServerIP = "192.168.3.83";
         public int ServerPort = 8085;
@@ -531,6 +530,7 @@ namespace WizepipesSocketServer
         //分析AnalyzeList中的数据
         private void AnalyzeData()
         {
+            List<string> resultList = new List<string>();//计算结果列表
             //对所有上传完成的设备进行基点分析，把结果写入数据库
             for (int i = 0; i < AnalyzeList.Count - 1; i++)//at least 2 device
             {
@@ -538,10 +538,10 @@ namespace WizepipesSocketServer
                 for (int j = i+1; j < AnalyzeList.Count; j++)
                 {
                     int idB = AnalyzeList[j];
-                    int deviceDffset = Net_Analyze_DB.autoAnalyze(idA, idB);
-                    Net_Analyze_DB.writeAnalyzeResult(idA, idB, deviceDffset, DateTime.Now.ToString(), 0);
-                    Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + deviceDffset);
-                    Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + deviceDffset);
+                    resultList = Net_Analyze.AutoAnalyze(idA, idB);
+                    Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), 0, resultList[1], resultList[2], resultList[3]);
+                    Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
+                    Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                 }
             }
             AnalyzeList.Clear();
