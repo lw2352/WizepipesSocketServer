@@ -11,25 +11,22 @@ namespace WizepipesSocketServer
 {
     class ZedToPng
     {
-        public static string SaveDataToPng(double[] data,int id)
-        {
-            ZedGraphControl zedGraphControl1 = new ZedGraphControl();
-            GraphPane paneA = new GraphPane();
-            PointPairList listA = new PointPairList();
+        private static ZedGraphControl zedGraphControl1 = new ZedGraphControl();
+        private static GraphPane paneA = new GraphPane();
+        private static PointPairList listA = new PointPairList();
 
+        public static string SaveDataToPng(double[] data,int id)
+        {         
             paneA.Title.IsVisible = false;
             paneA.XAxis.IsVisible = false;
             paneA.YAxis.IsVisible = false;
             if (id != 0)
             {
                 paneA.XAxis.Scale.Max = 300000;
-                paneA.YAxis.Scale.Min = -1;
             }
             else
             {
                 paneA.XAxis.Scale.Max = 550000;
-                paneA.YAxis.Scale.Max = 5;
-                paneA.YAxis.Scale.Min = -5;
             }
 
             for (int i = 0; i < data.Length; i++)
@@ -40,6 +37,7 @@ namespace WizepipesSocketServer
             
             using (Graphics g = zedGraphControl1.CreateGraphics())
             {
+                paneA.AxisChange(g);
                 paneA.ReSize(g, new RectangleF(0, 0, 1800, 300));
             }
 
