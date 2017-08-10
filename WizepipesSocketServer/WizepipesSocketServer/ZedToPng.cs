@@ -18,20 +18,26 @@ namespace WizepipesSocketServer
             PointPairList listA = new PointPairList();
 
             paneA.Title.IsVisible = false;
+            paneA.XAxis.IsVisible = false;
+            paneA.YAxis.IsVisible = false;
             if (id != 0)
             {
                 paneA.XAxis.Scale.Max = 300000;
+                paneA.YAxis.Scale.Min = -1;
             }
-            else paneA.XAxis.Scale.Max = 550000;
-            paneA.XAxis.IsVisible = false;
-            paneA.YAxis.IsVisible = false;
+            else
+            {
+                paneA.XAxis.Scale.Max = 550000;
+                paneA.YAxis.Scale.Max = 5;
+                paneA.YAxis.Scale.Min = -5;
+            }
 
             for (int i = 0; i < data.Length; i++)
             {
                 listA.Add(i, data[i]);
             }
             LineItem myCurveA = paneA.AddCurve("", listA, Color.Blue, SymbolType.None);
-
+            
             using (Graphics g = zedGraphControl1.CreateGraphics())
             {
                 paneA.ReSize(g, new RectangleF(0, 0, 1800, 300));
