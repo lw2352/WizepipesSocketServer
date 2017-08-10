@@ -11,6 +11,7 @@ namespace WizepipesSocketServer
 {
     class ZedToPng
     {
+        //TODO:本地测试程序，分析窗口卡死的原因和内存占用
         private static ZedGraphControl zedGraphControl1 = new ZedGraphControl();
         private static GraphPane paneA = new GraphPane();
         private static PointPairList listA = new PointPairList();
