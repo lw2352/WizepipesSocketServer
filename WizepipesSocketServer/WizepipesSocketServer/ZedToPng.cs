@@ -11,13 +11,12 @@ namespace WizepipesSocketServer
 {
     class ZedToPng
     {
-        //TODO:本地测试程序，分析窗口卡死的原因和内存占用
-        private static ZedGraphControl zedGraphControl1 = new ZedGraphControl();
-        private static GraphPane paneA = new GraphPane();
-        private static PointPairList listA = new PointPairList();
-
         public static string SaveDataToPng(double[] data,int id)
-        {         
+        {
+            ZedGraphControl zedGraphControl1 = new ZedGraphControl();
+            GraphPane paneA = new GraphPane();
+            PointPairList listA = new PointPairList();
+
             paneA.Title.IsVisible = false;
             paneA.XAxis.IsVisible = false;
             paneA.YAxis.IsVisible = false;
@@ -55,6 +54,8 @@ namespace WizepipesSocketServer
             {
                 paneA.GetImage().Save(strName, ImageFormat.Png);
             }
+            zedGraphControl1.Dispose();
+
             return strName;
         }
     }

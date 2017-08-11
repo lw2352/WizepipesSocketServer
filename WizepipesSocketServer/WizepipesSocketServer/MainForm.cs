@@ -101,10 +101,15 @@ namespace WizepipesSocketServer
 
         private void buttonAnalyze_Click(object sender, EventArgs e)
         {
-            List<string> resultList = new List<string>();//计算结果列表
-            resultList = Net_Analyze.AutoAnalyze(3, 4);
-            Net_Analyze_DB.writeAnalyzeResult(3, 4, resultList[0], DateTime.Now.ToString(), 0, resultList[1], resultList[2], resultList[3]);           
-            Console.WriteLine("设备" + 3 + "号和" + 4 + "号的基点为：" + resultList[0]);
+            Console.WriteLine("测试开始\r\n");
+            richTextBox1.AppendText("测试开始\r\n");
+            //for (int i = 0; i < 100; i++)
+            //{
+                server.TestZed();
+                //richTextBox1.AppendText("第"+i+"组");
+            //}
+            Console.WriteLine("测试结束\r\n");
+            richTextBox1.AppendText("测试结束\r\n");
         }
     }
 }
