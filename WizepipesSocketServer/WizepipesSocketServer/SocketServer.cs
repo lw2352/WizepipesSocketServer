@@ -644,7 +644,7 @@ namespace WizepipesSocketServer
             {
                 //分钟数大于60
                 cmd[9] = (byte) (DateTime.Now.Hour + 1);
-                cmd[10] = (byte) (DateTime.Now.Minute + CapNextTime - 60);
+                cmd[10] = (byte) (DateTime.Now.Minute + CapNextTime - 60 + 1);
             }
 
             if (IsAutoTest == true)
