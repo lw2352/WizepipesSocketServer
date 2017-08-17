@@ -344,175 +344,51 @@ namespace WizepipesSocketServer
 
         #region 操作cfg表
 
-        
-        public static string addsensorcfg(int sensorintdeviceID, int sensorCmdNumHex, int sensorCapTimeHour,
-            int sensorCapTimeMinute, int sensorOpenTime, int sensorCloseTime, int IsCaptureNow) //sensorcfg可由多个参数组成,后台再解析
-        {
-            MySQLDB.InitDb();
-            string sensorid = "0";
-            //从数据库中查找当前ID是否存在
-            try
-            {
-                DataSet ds1 = new DataSet("tsensorcfg");
-                string strSQL1 = "  SELECT intdeviceID FROM tsensorcfg where intdeviceID=" + sensorintdeviceID;
-                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
-                if (ds1 != null)
-                {
-                    if (ds1.Tables[0].Rows.Count > 0)
-                        // 有数据集
-                    {
-                        sensorid = ds1.Tables[0].Rows[0][0].ToString();
-
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return "fail";
-            }
-
-            //************************************************************
-            if (sensorid == "0") //若不存在,则添加
-            {
-                DataSet ds = new DataSet("dssensorcfg");
-                string strResult = "";
-                MySqlParameter[] parmss = null;
-                string strSQL = "";
-                bool IsDelSuccess = false;
-                strSQL =
-                    " insert into tsensorcfg (intdeviceID, CmdNumHex, CapTimeHour,CapTimeMinute,OpenTime,CloseTime, IsCaptureNow) values" +
-                    "(?sensorintdeviceID, ?sensorCmdNumHex, ?sensorCapTimeHour, ?sensorCapTimeMinute, ?sensorOpenTime, ?sensorCloseTime, ?sensorIsCaptureNow);";
-
-                parmss = new MySqlParameter[]
-                {
-                    new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCmdNumHex", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCapTimeHour", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCapTimeMinute", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorOpenTime", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCloseTime", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorIsCaptureNow", MySqlDbType.Int32)
-                };
-                parmss[0].Value = sensorintdeviceID;
-                parmss[1].Value = sensorCmdNumHex;
-                parmss[2].Value = sensorCapTimeHour;
-                parmss[3].Value = sensorCapTimeMinute;
-                parmss[4].Value = sensorOpenTime;
-                parmss[5].Value = sensorCloseTime;
-                parmss[6].Value = IsCaptureNow;
-
-                try
-                {
-                    IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
-
-                    if (IsDelSuccess != false)
-                    {
-                        return "ok";
-                    }
-                    else
-                    {
-                        return "fail";
-                    }
-                }
-
-                catch (Exception ex)
-                {
-                    return "fail";
-                }
-            }
-
-            else //若ID存在,就更新update
-            {
-                DataSet ds = new DataSet("dssensorcfg");
-                string strResult = "";
-                MySqlParameter[] parmss = null;
-                string strSQL = "";
-                bool IsDelSuccess = false;
-                strSQL =
-                    "Update tsensorcfg SET CmdNumHex=?sensorCmdNumHex, CapTimeHour =?sensorCapTimeHour ,CapTimeMinute = ?sensorCapTimeMinute,OpenTime = ?sensorOpenTime,CloseTime = ?sensorCloseTime, IsCaptureNow = ?sensorIsCaptureNow WHERE intdeviceID=?sensorintdeviceID";
-
-                parmss = new MySqlParameter[]
-                {
-                    new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCmdNumHex", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCapTimeHour", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCapTimeMinute", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorOpenTime", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorCloseTime", MySqlDbType.Int32),
-                    new MySqlParameter("?sensorIsCaptureNow", MySqlDbType.Int32)
-                };
-                parmss[0].Value = sensorintdeviceID;
-                parmss[1].Value = sensorCmdNumHex;
-                parmss[2].Value = sensorCapTimeHour;
-                parmss[3].Value = sensorCapTimeMinute;
-                parmss[4].Value = sensorOpenTime;
-                parmss[5].Value = sensorCloseTime;
-                parmss[6].Value = IsCaptureNow;
-
-                try
-                {
-                    IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
-
-                    if (IsDelSuccess != false)
-                    {
-                        return "ok";
-                    }
-                    else
-                    {
-                        return "fail";
-                    }
-                }
-
-                catch (Exception ex)
-                {
-                    return "fail";
-                }
-            }
-        }
-
-        //读取后台添加设备命令数和命令参数 add 3-17//3-18改成多列
         //"读取后台添加设备命令数和命令参数")]
-        public static int[] readsensorcfg(int sensorintdeviceID)
+        public static List<string> readsensorcfg(int sensorintdeviceID)
         {
+            List<string> resultList = new List<string>();
             MySQLDB.InitDb();
-            int[] sensorcfg = new int[7];
-            int CmdNumHex = 0;
-            int CapTimeHour = 0;
-            int CapTimeMinute = 0;
-            int OpenTime = 0;
-            int CloseTime = 0;
-            int IsCaptureNow = 0;
-            int IsGetGPSinfo = 0;
+
             //从数据库中查找当前ID是否存在
             try
             {
                 DataSet ds1 = new DataSet("tsensorcfg");
                 string strSQL1 =
-                    "  SELECT CmdNumHex, CapTimeHour, CapTimeMinute, OpenTime, CloseTime, IsCaptureNow, IsGetGPSinfo FROM tsensorcfg where intdeviceID=" +
-                    sensorintdeviceID;
+                    "SELECT * FROM tsensorcfg where intdeviceID=" +sensorintdeviceID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
-                    if (ds1.Tables[0].Rows.Count > 0)
-                        // 有数据集
+                    // 有数据集
+                    if (ds1.Tables[0].Rows.Count > 0)       
                     {
-                        CmdNumHex = (int)ds1.Tables[0].Rows[0]["CmdNumHex"];
-                        CapTimeHour = (int)ds1.Tables[0].Rows[0]["CapTimeHour"];
-                        CapTimeMinute = (int)ds1.Tables[0].Rows[0][2];
-                        OpenTime = (int)ds1.Tables[0].Rows[0][3];
-                        CloseTime = (int)ds1.Tables[0].Rows[0][4];
-                        IsCaptureNow = (int)ds1.Tables[0].Rows[0][5];
-                        IsGetGPSinfo = (int)ds1.Tables[0].Rows[0][6];
+                        //共16个
+                        //0-7
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetCapTime"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetOpenAndCloseTime"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsCaptureNow"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsGetGpsInfo"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetApName"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetApPassword"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetServerIP"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetServerPort"] as string);
 
-                        sensorcfg[0] = CmdNumHex;
-                        sensorcfg[1] = CapTimeHour;
-                        sensorcfg[2] = CapTimeMinute;
-                        sensorcfg[3] = OpenTime;
-                        sensorcfg[4] = CloseTime;
-                        sensorcfg[5] = IsCaptureNow;
-                        sensorcfg[6] = IsGetGPSinfo;
+                        //下面8个,8--15
+                        resultList.Add(ds1.Tables[0].Rows[0]["CapTimeHour"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["CapTimeMinute"] as string);
+                        
+                        resultList.Add(ds1.Tables[0].Rows[0]["OpenTime"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["CloseTime"] as string);
+                        
+                        resultList.Add(ds1.Tables[0].Rows[0]["ApName"] as string);
+                        
+                        resultList.Add(ds1.Tables[0].Rows[0]["ApPassword"] as string);
+                        
+                        resultList.Add(ds1.Tables[0].Rows[0]["ServerIP"] as string);
+                        
+                        resultList.Add(ds1.Tables[0].Rows[0]["ServerPort"] as string);
 
-                        return sensorcfg;
+                        return resultList;
                     }
                     else return null;
                 }
@@ -521,18 +397,11 @@ namespace WizepipesSocketServer
             catch (Exception ex)
             {
                 return null;
-                //return PublicMethod.getResultJson(ErrorCodeDefinition.DB_ERROR, ErrorCodeDefinition.getErrorMessageByErrorCode(ErrorCodeDefinition.DB_ERROR));//数据库异常
             }
         }
 
-        //add 7-26
-        /// <summary>
-        /// 命令发送成功后把CmdNumHex
-        /// </summary>
-        /// <param name="sensorintdeviceID"></param>
-        /// <param name="cmdNumHex"></param>
-        /// <returns></returns>
-        public static string UpdateSensorCfg(int sensorintdeviceID, int cmdNumHex)
+
+        public static string UpdateSensorCfg(int sensorintdeviceID, string updateItem, int updateNum)
         {
             MySQLDB.InitDb();
             string strResult = "";
@@ -540,14 +409,14 @@ namespace WizepipesSocketServer
             string strSQL = "";
             bool IsDelSuccess = false;
             strSQL =
-                "Update tsensorcfg SET CmdNumHex=?sensorCmdNumHex WHERE intdeviceID=?sensorintdeviceID";
+                "Update tsensorcfg SET" + updateItem+"?sensorupdateItem WHERE intdeviceID=?sensorintdeviceID";
             parmss = new MySqlParameter[]
             {
                 new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
-                new MySqlParameter("?sensorCmdNumHex", MySqlDbType.Int32),
+                new MySqlParameter("?sensorupdateItem", MySqlDbType.Int32),
             };
             parmss[0].Value = sensorintdeviceID;
-            parmss[1].Value = cmdNumHex;
+            parmss[1].Value = updateNum;
 
             try
             {
@@ -569,46 +438,7 @@ namespace WizepipesSocketServer
             }
         }
 
-        public static string UpdateSensorCfgBySetIsGetGpsInfo(int sensorintdeviceID, int IsGetGPSinfo)
-        {
-            MySQLDB.InitDb();
-            string strResult = "";
-            MySqlParameter[] parmss = null;
-            string strSQL = "";
-            bool IsDelSuccess = false;
-            strSQL =
-                "Update tsensorcfg SET IsGetGPSinfo=?sensorIsGetGPSinfo WHERE intdeviceID=?sensorintdeviceID";
-            parmss = new MySqlParameter[]
-            {
-                new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
-                new MySqlParameter("?sensorIsGetGPSinfo", MySqlDbType.Int32),
-            };
-            parmss[0].Value = sensorintdeviceID;
-            parmss[1].Value = IsGetGPSinfo;
-
-            try
-            {
-                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
-
-                if (IsDelSuccess != false)
-                {
-                    return "ok";
-                }
-                else
-                {
-                    return "fail";
-                }
-            }
-
-            catch (Exception ex)
-            {
-                return "fail";
-            }
-        }
-
-
-
-        #endregion
+      #endregion
 
     }
 }

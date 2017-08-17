@@ -37,7 +37,7 @@ namespace WizepipesSocketServer
 
     class DataItem
     {
-        public static log4net.ILog Log = log4net.LogManager.GetLogger(typeof(SocketServer));
+        public static log4net.ILog Log = log4net.LogManager.GetLogger(typeof(DataItem));
 
         public Socket socket;
         public byte[] buffer;
@@ -190,7 +190,7 @@ namespace WizepipesSocketServer
                                   intDeviceID + "--设定GPS采样时间成功" + "\n";
                             Console.WriteLine(msg);
                             Log.Debug(msg);
-                            NetDb.UpdateSensorCfg(intDeviceID, 1);
+                            NetDb.UpdateSensorCfg(intDeviceID, "IsSetCapTime", 0);
                         }
 
                         break;
@@ -202,7 +202,7 @@ namespace WizepipesSocketServer
                                   intDeviceID + "--设定开启时长和关闭时长成功" + "\n";
                             Console.WriteLine(msg);
                             Log.Debug(msg);
-                            NetDb.UpdateSensorCfg(intDeviceID, 2);
+                            NetDb.UpdateSensorCfg(intDeviceID, "IsSetOpenAndCloseTime", 0);
                         }
                         break;
 
@@ -229,7 +229,7 @@ namespace WizepipesSocketServer
                             NetDb.UpdateSensorGPSinfo(intDeviceID, 0, 0);
                         }
                         //经纬度信息读取成功,把标志位复位
-                        NetDb.UpdateSensorCfgBySetIsGetGpsInfo(intDeviceID, 0);
+                        NetDb.UpdateSensorCfg(intDeviceID, "IsGetGpsInfo", 0);
                         Log.Debug("经纬度信息读取成功,把标志位复位");
                         break;
 
@@ -237,28 +237,32 @@ namespace WizepipesSocketServer
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--设定服务器IP成功" + "\n";
                         Console.WriteLine(msg);
-                        //ShowMsg(msg);
+                        Log.Debug(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, "IsSetServerIP", 0);
                         break;
 
                     case 0x30:
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--设定服务器端口号成功" + "\n";
                         Console.WriteLine(msg);
-                        //ShowMsg(msg);
+                        Log.Debug(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, "IsSetServerPort", 0);
                         break;
 
                     case 0x31:
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--设定AP名称成功" + "\n";
                         Console.WriteLine(msg);
-                        //ShowMsg(msg);
+                        Log.Debug(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, "IsSetApName", 0);
                         break;
 
                     case 0x32:
                         msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                               intDeviceID + "--设定AP密码成功" + "\n";
                         Console.WriteLine(msg);
-                        //ShowMsg(msg);
+                        Log.Debug(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, "IsSetApPassword", 0);
                         break;
 
                     case 0xFF:

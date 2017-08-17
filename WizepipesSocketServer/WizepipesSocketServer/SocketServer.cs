@@ -7,13 +7,12 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-[assembly: log4net.Config.XmlConfigurator(Watch = true)]
+//[assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
 namespace WizepipesSocketServer
 {
     class SocketServer
     {
-        //TODO:使用log4net来记录日志。
         public static log4net.ILog Log = log4net.LogManager.GetLogger(typeof(SocketServer));
 
         public static Hashtable htClient = new Hashtable(); //strAddress--DataItem
@@ -45,9 +44,6 @@ namespace WizepipesSocketServer
 
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
-        private const int constCapTimeCmdSendOK = 1;
-
-        private const int constAllCmdSendOK = 2;
         //初始化服务器，给服务参数赋值
 
         #region get-set访问器（12个）
@@ -409,7 +405,7 @@ namespace WizepipesSocketServer
                             if (dataItem.status.IsGetADNow == true)
                             {
                                 //立即采样完成后，重新设置一次采样时刻
-                                NetDb.UpdateSensorCfg(dataItem.intDeviceID, 0);
+                                NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsSetCapTime", 1);
                                 dataItem.status.IsGetADNow = false;
                                 dataItem.status.adStage = AdStage.Idle;
                                 Log.Debug("立即采样完成后，重新设置一次采样时刻");
@@ -471,7 +467,7 @@ namespace WizepipesSocketServer
         //读取数据库命令线程
         public void CheckDataBaseQueue(object state)
         {
-            int[] cfg = new int[7]; //存储从数据库读取的设备配置参数
+            List<string> cfgList = new List<string>(); //存储从数据库读取的设备配置参数
             //收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
             while (IsServerOpen)
             {
@@ -479,24 +475,81 @@ namespace WizepipesSocketServer
                 {
                     foreach (DataItem dataItem in htClient.Values)
                     {
-                        cfg = NetDb.readsensorcfg(dataItem
-                            .intDeviceID); //从数据库读取设备的配置参数                                              
+                        cfgList = NetDb.readsensorcfg(dataItem.intDeviceID); //从数据库读取设备的配置参数                                              
 
-                        if (cfg != null && cfg[0] == 0)
+                        if (cfgList != null)
                         {
-                            byte[] cmdCapTime = cmdItem.CmdSetCapTime;
-                            cmdCapTime[9] = (byte) cfg[1];
-                            cmdCapTime[10] = (byte) cfg[2];
-
-                            byte[] cmdSetOpenAndCloseTime = cmdItem.CmdSetOpenAndCloseTime;
-                            cmdSetOpenAndCloseTime[9] = (byte) (2 * cfg[3] >> 8);
-                            cmdSetOpenAndCloseTime[10] = (byte) (2 * cfg[3] & 0xFF);
-                            cmdSetOpenAndCloseTime[11] = (byte) (2 * cfg[4] >> 8);
-                            cmdSetOpenAndCloseTime[12] = (byte) (2 * cfg[4] & 0xFF);
-
                             Queue<byte[]> DbCmdQueue = new Queue<byte[]>();
-                            DbCmdQueue.Enqueue(cmdCapTime);
-                            DbCmdQueue.Enqueue(cmdSetOpenAndCloseTime);
+                            
+
+                            if ((Convert.ToInt32(cfgList[0]) == 1))//设置采样时刻
+                            {
+                                byte[] cmdCapTime = cmdItem.CmdSetCapTime;
+                                cmdCapTime[9] = (byte)(Convert.ToInt32(cfgList[8]));
+                                cmdCapTime[10] = (byte)(Convert.ToInt32(cfgList[9]));
+
+                                DbCmdQueue.Enqueue(cmdCapTime);
+                            }
+                            if ((Convert.ToInt32(cfgList[1]) == 1))//设置开启和关闭时长
+                            {
+                                int OpenTime = 2 * Convert.ToInt32(Convert.ToInt32(cfgList[10]));
+                                int CloseTime = 2 * Convert.ToInt32(Convert.ToInt32(cfgList[11]));
+                                byte[] cmdSetOpenAndCloseTime = cmdItem.CmdSetOpenAndCloseTime;
+                                cmdSetOpenAndCloseTime[9] = (byte)(OpenTime >> 8);
+                                cmdSetOpenAndCloseTime[10] = (byte)(OpenTime & 0xFF);
+                                cmdSetOpenAndCloseTime[11] = (byte)(CloseTime >> 8);
+                                cmdSetOpenAndCloseTime[12] = (byte)(CloseTime & 0xFF);
+
+                                DbCmdQueue.Enqueue(cmdSetOpenAndCloseTime);
+                            }
+                            if ((Convert.ToInt32(cfgList[2]) == 1))//是否立即采样
+                            {
+                                dataItem.status.IsGetADNow = true;
+                                dataItem.status.adStage = AdStage.Idle;
+                                DbCmdQueue.Enqueue(SetCapTime(dataItem.intDeviceID));
+                            }
+                            if ((Convert.ToInt32(cfgList[3]) == 1))//是否读取Gps经纬度信息
+                            {
+                                DbCmdQueue.Enqueue(cmdItem.CmdReadGPSData);
+                            }
+                            if ((Convert.ToInt32(cfgList[4]) == 1))//是否设置AP名称
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPssid;
+                                byte[] SetAPName = strToByte(cfgList[12]);//转换成字符型
+                                for (int i = 0, j = 9; i < SetAPName.Length; i++)
+                                {
+                                    Cmd[j++] = SetAPName[i];
+                                }
+                                DbCmdQueue.Enqueue(Cmd);
+                            }
+                            if ((Convert.ToInt32(cfgList[5]) == 1))//是否设置AP密码
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPpassword;
+                                byte[] SetAPpassword = strToByte(cfgList[13]);
+                                for (int i = 0, j = 9; i < SetAPpassword.Length; i++)
+                                {
+                                    Cmd[j++] = SetAPpassword[i];
+                                }
+                                DbCmdQueue.Enqueue(Cmd);
+                            }
+                            if ((Convert.ToInt32(cfgList[6]) == 1))//是否设置Server的IP
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPpassword;
+                                //TODO:!!!去除小数点
+                            }
+                            if ((Convert.ToInt32(cfgList[7]) == 1))//是否设置Server的Port
+                            {
+                                byte[] Cmd = cmdItem.CmdSetServerPort;
+                                byte[] bytePort = new byte[2];
+
+                                int port = Convert.ToInt32(cfgList[15]);
+                                bytePort = intToBytes(port);
+                                Cmd[9] = bytePort[0];
+                                Cmd[10] = bytePort[1];
+                                DbCmdQueue.Enqueue(Cmd);
+                            }
+
+                            
                             if (!htSendCmd.ContainsKey(dataItem.intDeviceID)) //不存在ID则添加
                             {
                                 htSendCmd.Add(dataItem.intDeviceID, DbCmdQueue);
@@ -512,28 +565,8 @@ namespace WizepipesSocketServer
                                 Log.Debug(msg);
                             }
 
-                        }
 
-                        //获取设备的GPS经纬度
-                        if (cfg != null && cfg[6] == 1 && cfg[0] == constAllCmdSendOK)
-                        {
-                            AddCmdToQueue(dataItem.intDeviceID, cmdItem.CmdReadGPSData);
                         }
-
-                        //立即采样（加3分钟）流程
-                        if (cfg != null && cfg[5] == 1 && cfg[0] == constAllCmdSendOK)
-                        {
-                            dataItem.status.IsGetADNow = true;
-                            SetCapTime(dataItem.intDeviceID);
-                        }
-                        else if (cfg != null && cfg[5] == 1 && cfg[0] == constCapTimeCmdSendOK)
-                        {
-                            //立即采样时间设置成功,把标志位复位
-                            NetDb.addsensorcfg(dataItem.intDeviceID, 2, cfg[1], cfg[2], cfg[3], cfg[4], 0);
-                            Log.Debug("立即采样时间设置成功,把标志位复位");
-                        }
-
-                        
 
                     } //end of foreach
                 }
@@ -617,6 +650,34 @@ namespace WizepipesSocketServer
             return returnInt;
         }
 
+        /// <summary>
+        /// 将int数值转换为占byte数组
+        /// </summary>
+        /// <param name="value">int</param>
+        /// <returns>byte[]</returns>
+        private static byte[] intToBytes(int value)
+        {
+            byte[] src = new byte[2];
+
+            src[0] = (byte)((value >> 8) & 0xFF);
+            src[1] = (byte)(value & 0xFF);
+            return src;
+        }
+
+        /// <summary>
+        /// 字符串转数组(1-->49)
+        /// </summary>
+        /// <param name="str">string</param>
+        /// <returns>byte[]</returns>
+        private static byte[] strToByte(string str)
+        {
+            byte[] bytes = new byte[str.Length];
+            for (int i = 0; i < str.Length; i++)
+            {
+                bytes[i] = Convert.ToByte(str[i]);
+            }
+            return bytes;
+        }
 
         public void UploadData()
         {
@@ -635,10 +696,9 @@ namespace WizepipesSocketServer
             }
         }
 
-        public void SetCapTime(int id)
+        public byte[] SetCapTime(int id)
         {
             byte[] cmd = cmdItem.CmdSetCapTime;
-            //int NextTime = Convert.ToInt32(nextTime);
             if (DateTime.Now.Minute + CapNextTime <= 59)
             {
                 cmd[9] = (byte) DateTime.Now.Hour;
@@ -655,7 +715,9 @@ namespace WizepipesSocketServer
             {
                 AddCmdToQueue(0xFF, cmd);
             }
-            else AddCmdToQueue(id, cmd);
+            //else AddCmdToQueue(id, cmd);
+
+            return cmd;
         }
 
         //for set capTime
@@ -669,7 +731,7 @@ namespace WizepipesSocketServer
                     dataItem.status.adStage = AdStage.Idle;
                 }
             }
-            else
+            /*else
             {
                 foreach (DataItem dataItem in htClient.Values)
                 {
@@ -682,7 +744,7 @@ namespace WizepipesSocketServer
                         }
                     }
                 }
-            }
+            }*/
         }
 
         //显示哈希表中设备的各项信息
