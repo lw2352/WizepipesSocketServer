@@ -37,11 +37,11 @@ namespace WizepipesSocketServer
         public bool IsAutoTest = true;
         public int CapNextTime = 5;
 
-        private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true)
-            ; //处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
+        //处理接收数据线程；ManualResetEvent:通知一个或多个正在等待的线程已发生事件
+        private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);
 
-        private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true)
-            ; //处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
+        //处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
+        private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);         
 
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
@@ -170,6 +170,7 @@ namespace WizepipesSocketServer
                 IsServerOpen = false;
                 checkRecDataQueueResetEvent.WaitOne();
                 checkSendDataQueueResetEvent.WaitOne();
+                CheckDataBaseQueueResetEvent.WaitOne();
                 foreach (DataItem dataItem in htClient.Values)
                 {
                     dataItem.CloseSocket();
@@ -177,6 +178,8 @@ namespace WizepipesSocketServer
                 ServerSocket.Close();
                 htClient.Clear();
                 htSendCmd.Clear();
+
+                GC.SuppressFinalize(this);
                 Log.Debug("服务关闭成功");
             }
             catch (Exception ex)
@@ -248,14 +251,17 @@ namespace WizepipesSocketServer
                          dataItem.buffer[bytesRead - 2] == 0x5A && dataItem.buffer[bytesRead - 1] == 0x5A) //判断报文头和尾
                 {
                     //test
-                    string str = byteToHexStr(dataItem.buffer);
+                    /*string str = byteToHexStr(dataItem.buffer);
                     string strrec = str.Substring(0, bytesRead * 2);
                     Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID +
-                                      "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");
-
-                    byte[] recData = new byte[bytesRead];
-                    Array.Copy(dataItem.buffer, recData, bytesRead);
-                    dataItem.recDataQueue.Enqueue(recData); //Enqueue 将对象添加到 Queue<T> 的结尾处
+                                      "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");*/
+                    
+                    if (bytesRead <= bufferLength)
+                    {
+                        byte[] recData = new byte[bytesRead];
+                        Array.Copy(dataItem.buffer, recData, bytesRead);
+                        dataItem.recDataQueue.Enqueue(recData); //Enqueue 将对象添加到 Queue<T> 的结尾处
+                    }
 
                     if (dataItem.buffer[2] == 0xFF)
                     {
@@ -400,6 +406,15 @@ namespace WizepipesSocketServer
                             {
                                 dataItem.status.adStage = AdStage.Idle;
                             }
+                            if (dataItem.status.IsGetADNow == true)
+                            {
+                                //立即采样完成后，重新设置一次采样时刻
+                                NetDb.UpdateSensorCfg(dataItem.intDeviceID, 0);
+                                dataItem.status.IsGetADNow = false;
+                                dataItem.status.adStage = AdStage.Idle;
+                                Log.Debug("立即采样完成后，重新设置一次采样时刻");
+
+                            }
                         }
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //发送命令哈希表中是否包含当前dataItem的id
@@ -518,18 +533,7 @@ namespace WizepipesSocketServer
                             Log.Debug("立即采样时间设置成功,把标志位复位");
                         }
 
-                        if (dataItem.status.IsGetADNow == true && dataItem.status.adStage == AdStage.AdStored)
-                        {
-                            //立即采样完成后，重新设置一次采样时刻
-                            NetDb.addsensorcfg(dataItem.intDeviceID, 0, cfg[1], cfg[2], cfg[3], cfg[4], 0);
-                            dataItem.status.IsGetADNow = false;
-                            dataItem.status.adStage = AdStage.Idle;
-                            Log.Debug("立即采样完成后，重新设置一次采样时刻");
-                            //adstage的状态变化太快的话，前台不能从数据库检测到
-                            //NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
-                            //dataItem.status.HeartTime.ToString(),
-                            //Convert.ToInt32(dataItem.status.clientStage), Convert.ToInt32(dataItem.status.adStage));
-                        }
+                        
 
                     } //end of foreach
                 }

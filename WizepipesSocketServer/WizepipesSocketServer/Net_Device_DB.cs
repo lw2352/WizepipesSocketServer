@@ -267,7 +267,84 @@ namespace WizepipesSocketServer
             }
         }
 
+        //创建新表 add 3-17
+        //"创建新表")]
+        public static string creatNewTable(string childName)
+        {
+            MySQLDB.InitDb();
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL = "CREATE TABLE " + childName +
+                     "(DataID INT AUTO_INCREMENT, DataDate VARCHAR(45), DataPath VARCHAR(45), PRIMARY KEY (`DataID`));"; //建立新表
+            /*parmss = new MySqlParameter[]
+                                     {
+                                         new MySqlParameter("?sensorChildTable", MySqlDbType.VarChar)
+                                     };
+            parmss[0].Value = childName;*/
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
 
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+            catch (Exception ex)
+            {
+
+                return "fail";
+            }
+        }
+
+        //插入AD数据信息 add 3-17
+        //"插入AD数据信息")]
+        public static string insertADData(string tableName, string sensorDataDate, string sensorDataPath)
+        {
+            MySQLDB.InitDb();
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            //添加数据
+            strSQL = " insert into " + tableName + " (DataDate,DataPath) values" +
+                     "(?sensorDataDate,?sensorDataPath);";
+
+            parmss = new MySqlParameter[]
+            {
+                //new MySqlParameter("?tableName", MySqlDbType.VarChar),
+                new MySqlParameter("?sensorDataDate", MySqlDbType.DateTime),
+                new MySqlParameter("?sensorDataPath", MySqlDbType.VarChar)
+            };
+            //parmss[0].Value = tableName;
+            parmss[0].Value = Convert.ToDateTime(sensorDataDate);
+            parmss[1].Value = sensorDataPath;
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
+        #region 操作cfg表
+
+        
         public static string addsensorcfg(int sensorintdeviceID, int sensorCmdNumHex, int sensorCapTimeHour,
             int sensorCapTimeMinute, int sensorOpenTime, int sensorCloseTime, int IsCaptureNow) //sensorcfg可由多个参数组成,后台再解析
         {
@@ -282,7 +359,7 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     if (ds1.Tables[0].Rows.Count > 0)
-                    // 有数据集
+                        // 有数据集
                     {
                         sensorid = ds1.Tables[0].Rows[0][0].ToString();
 
@@ -417,10 +494,10 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     if (ds1.Tables[0].Rows.Count > 0)
-                    // 有数据集
+                        // 有数据集
                     {
-                        CmdNumHex = (int)ds1.Tables[0].Rows[0][0];
-                        CapTimeHour = (int)ds1.Tables[0].Rows[0][1];
+                        CmdNumHex = (int)ds1.Tables[0].Rows[0]["CmdNumHex"];
+                        CapTimeHour = (int)ds1.Tables[0].Rows[0]["CapTimeHour"];
                         CapTimeMinute = (int)ds1.Tables[0].Rows[0][2];
                         OpenTime = (int)ds1.Tables[0].Rows[0][3];
                         CloseTime = (int)ds1.Tables[0].Rows[0][4];
@@ -449,7 +526,12 @@ namespace WizepipesSocketServer
         }
 
         //add 7-26
-        //命令发送成功后把CmdNumHex置1
+        /// <summary>
+        /// 命令发送成功后把CmdNumHex
+        /// </summary>
+        /// <param name="sensorintdeviceID"></param>
+        /// <param name="cmdNumHex"></param>
+        /// <returns></returns>
         public static string UpdateSensorCfg(int sensorintdeviceID, int cmdNumHex)
         {
             MySQLDB.InitDb();
@@ -524,81 +606,9 @@ namespace WizepipesSocketServer
             }
         }
 
-        //创建新表 add 3-17
-        //"创建新表")]
-        public static string creatNewTable(string childName)
-        {
-            MySQLDB.InitDb();
-            MySqlParameter[] parmss = null;
-            string strSQL = "";
-            bool IsDelSuccess = false;
-            strSQL = "CREATE TABLE " + childName +
-                     "(DataID INT AUTO_INCREMENT, DataDate VARCHAR(45), DataPath VARCHAR(45), PRIMARY KEY (`DataID`));"; //建立新表
-            /*parmss = new MySqlParameter[]
-                                     {
-                                         new MySqlParameter("?sensorChildTable", MySqlDbType.VarChar)
-                                     };
-            parmss[0].Value = childName;*/
-            try
-            {
-                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
 
-                if (IsDelSuccess != false)
-                {
-                    return "ok";
-                }
-                else
-                {
-                    return "fail";
-                }
-            }
-            catch (Exception ex)
-            {
 
-                return "fail";
-            }
-        }
-
-        //插入AD数据信息 add 3-17
-        //"插入AD数据信息")]
-        public static string insertADData(string tableName, string sensorDataDate, string sensorDataPath)
-        {
-            MySQLDB.InitDb();
-            MySqlParameter[] parmss = null;
-            string strSQL = "";
-            bool IsDelSuccess = false;
-            //添加数据
-            strSQL = " insert into " + tableName + " (DataDate,DataPath) values" +
-                     "(?sensorDataDate,?sensorDataPath);";
-
-            parmss = new MySqlParameter[]
-            {
-                //new MySqlParameter("?tableName", MySqlDbType.VarChar),
-                new MySqlParameter("?sensorDataDate", MySqlDbType.DateTime),
-                new MySqlParameter("?sensorDataPath", MySqlDbType.VarChar)
-            };
-            //parmss[0].Value = tableName;
-            parmss[0].Value = Convert.ToDateTime(sensorDataDate);
-            parmss[1].Value = sensorDataPath;
-            try
-            {
-                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
-
-                if (IsDelSuccess != false)
-                {
-                    return "ok";
-                }
-                else
-                {
-                    return "fail";
-                }
-            }
-            catch (Exception ex)
-            {
-                return "fail";
-            }
-        }
-
+        #endregion
 
     }
 }
