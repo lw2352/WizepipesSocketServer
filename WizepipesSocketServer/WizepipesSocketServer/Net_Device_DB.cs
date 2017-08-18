@@ -345,9 +345,21 @@ namespace WizepipesSocketServer
         #region 操作cfg表
 
         //"读取后台添加设备命令数和命令参数")]
-        public static List<string> readsensorcfg(int sensorintdeviceID)
+        public static List<int> readsensorcfg(int sensorintdeviceID)
         {
-            List<string> resultList = new List<string>();
+            List<int> resultList = new List<int>();
+
+            List<string> itemList = new List<string>();
+            itemList.Add("IsSetCapTime");
+            itemList.Add("IsSetOpenAndCloseTime");
+            itemList.Add("IsCaptureNow");
+            itemList.Add("IsGetGpsInfo");
+            itemList.Add("IsSetApName");
+            itemList.Add("IsSetApPassword");
+            itemList.Add("IsSetServerIP");
+            itemList.Add("IsSetServerPort");
+            itemList.Add("IsReconnect");
+
             MySQLDB.InitDb();
 
             //从数据库中查找当前ID是否存在
@@ -355,38 +367,80 @@ namespace WizepipesSocketServer
             {
                 DataSet ds1 = new DataSet("tsensorcfg");
                 string strSQL1 =
-                    "SELECT * FROM tsensorcfg where intdeviceID=" +sensorintdeviceID;
+                    "SELECT * FROM tsensorcfg where intdeviceID=" + sensorintdeviceID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
                     // 有数据集
-                    if (ds1.Tables[0].Rows.Count > 0)       
+                    if (ds1.Tables[0].Rows.Count > 0)
                     {
-                        //共16个
-                        //0-7
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetCapTime"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetOpenAndCloseTime"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsCaptureNow"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsGetGpsInfo"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetApName"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetApPassword"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetServerIP"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["IsSetServerPort"] as string);
+                        for (int i = 0; i < itemList.Count; i++)
+                        {
+                            string item = (ds1.Tables[0].Rows[0][itemList[i]]).ToString();
+                            if (item != null && item != "")
+                            {
+                                resultList.Add(Convert.ToInt32(item));
+                            }
+                            else resultList.Add(0);
+                        }
 
-                        //下面8个,8--15
-                        resultList.Add(ds1.Tables[0].Rows[0]["CapTimeHour"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["CapTimeMinute"] as string);
-                        
-                        resultList.Add(ds1.Tables[0].Rows[0]["OpenTime"] as string);
-                        resultList.Add(ds1.Tables[0].Rows[0]["CloseTime"] as string);
-                        
-                        resultList.Add(ds1.Tables[0].Rows[0]["ApName"] as string);
-                        
-                        resultList.Add(ds1.Tables[0].Rows[0]["ApPassword"] as string);
-                        
-                        resultList.Add(ds1.Tables[0].Rows[0]["ServerIP"] as string);
-                        
-                        resultList.Add(ds1.Tables[0].Rows[0]["ServerPort"] as string);
+                        //0-8，共9个
+                        /*var item0 = ds1.Tables[0].Rows[0]["IsSetCapTime"];
+                        if (item0 != null)
+                        {
+                            resultList.Add(Convert.ToInt32(item0));
+                        }
+                        else resultList.Add(0);
+
+                        var item1 = ds1.Tables[0].Rows[0]["IsSetOpenAndCloseTime"].ToString();
+                        if (item1 != null)
+                        {
+                            resultList.Add(Convert.ToInt32(item1));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsCaptureNow"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsCaptureNow"]));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsGetGpsInfo"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsGetGpsInfo"]));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsSetApName"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsSetApName"]));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsSetApPassword"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsSetApPassword"]));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsSetServerIP"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsSetServerIP"]));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsSetServerPort"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsSetServerPort"]));
+                        }
+                        else resultList.Add(0);
+
+                        if ((ds1.Tables[0].Rows[0]["IsReconnect"]) != null)
+                        {
+                            resultList.Add(Convert.ToInt32(ds1.Tables[0].Rows[0]["IsReconnect"]));
+                        }
+                        else resultList.Add(0);*/
+
 
                         return resultList;
                     }
@@ -400,6 +454,53 @@ namespace WizepipesSocketServer
             }
         }
 
+        public static string readsensorcfgItem(int sensorintdeviceID, string readItem)
+        {
+            string resultItem = null;
+            MySQLDB.InitDb();
+
+            try
+            {
+                DataSet ds1 = new DataSet("tsensorcfg");
+                string strSQL1 =
+                    "SELECT " + readItem + " FROM tsensorcfg where intdeviceID=" + sensorintdeviceID;
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    // 有数据集
+                    if (ds1.Tables[0].Rows.Count > 0)
+                    {
+                        //下面8个
+                        /*resultList.Add(ds1.Tables[0].Rows[0]["CapTimeHour"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["CapTimeMinute"] as string);
+
+                        resultList.Add(ds1.Tables[0].Rows[0]["OpenTime"] as string);
+                        resultList.Add(ds1.Tables[0].Rows[0]["CloseTime"] as string);
+
+                        resultList.Add(ds1.Tables[0].Rows[0]["ApName"] as string);
+
+                        resultList.Add(ds1.Tables[0].Rows[0]["ApPassword"] as string);
+
+                        resultList.Add(ds1.Tables[0].Rows[0]["ServerIP"] as string);
+
+                        resultList.Add(ds1.Tables[0].Rows[0]["ServerPort"] as string);*/
+
+                        string item = (ds1.Tables[0].Rows[0][0]).ToString();
+                        if (item != null && item!="")
+                        {
+                            resultItem = item;
+                        }
+                        return resultItem;
+                    }
+                    else return null;
+                }
+                else return null;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
 
         public static string UpdateSensorCfg(int sensorintdeviceID, string updateItem, int updateNum)
         {
@@ -409,7 +510,7 @@ namespace WizepipesSocketServer
             string strSQL = "";
             bool IsDelSuccess = false;
             strSQL =
-                "Update tsensorcfg SET" + updateItem+"?sensorupdateItem WHERE intdeviceID=?sensorintdeviceID";
+                "Update tsensorcfg SET " + updateItem + " =?sensorupdateItem WHERE intdeviceID=?sensorintdeviceID";
             parmss = new MySqlParameter[]
             {
                 new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
@@ -438,7 +539,7 @@ namespace WizepipesSocketServer
             }
         }
 
-      #endregion
+        #endregion
 
     }
 }

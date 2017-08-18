@@ -10,9 +10,8 @@ namespace WizepipesSocketServer
 {
     public enum ClientStage
     {
-        idle,//空闲
-        offLine//离线
-
+        offLine,//离线
+        idle//空闲    
     };
 
     public enum AdStage
@@ -65,7 +64,8 @@ namespace WizepipesSocketServer
             intDeviceID = ID;
 
             status.IsSendDataToServer = false;
-            status.clientStage = 0;
+            status.clientStage = ClientStage.idle;
+            status.adStage = AdStage.Idle;
             status.currentsendbulk = 0;
             status.byteAllData = new byte[byteAllDataLength];
             status.HeartTime = DateTime.Now;

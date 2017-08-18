@@ -40,7 +40,7 @@ namespace WizepipesSocketServer
         private ManualResetEvent checkRecDataQueueResetEvent = new ManualResetEvent(true);
 
         //处理发送数据线程，把数据哈希表中的数据复制到各个dataItem中的发送队列
-        private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);         
+        private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);
 
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
 
@@ -233,7 +233,7 @@ namespace WizepipesSocketServer
                 Socket clientSocket = ar.AsyncState as Socket;
                 strAddress = clientSocket.RemoteEndPoint.ToString();
 
-                DataItem dataItem = (DataItem) htClient[strAddress]; //取出address对应的dataitem
+                DataItem dataItem = (DataItem)htClient[strAddress]; //取出address对应的dataitem
 
                 bytesRead = clientSocket.EndReceive(ar); //接收到的数据长度
 
@@ -251,7 +251,7 @@ namespace WizepipesSocketServer
                     string strrec = str.Substring(0, bytesRead * 2);
                     Console.WriteLine(DateTime.Now + "从硬件" + dataItem.strAddress + "设备号--" + dataItem.intDeviceID +
                                       "接收到的数据长度是" + bytesRead.ToString() + "数据是" + strrec + "\n");*/
-                    
+
                     if (bytesRead <= bufferLength)
                     {
                         byte[] recData = new byte[bytesRead];
@@ -286,7 +286,7 @@ namespace WizepipesSocketServer
                             else
                             {
                                 //若存在，把旧地址的status数据属性复制到新地址上
-                                DataItem olddataItem = (DataItem) htClient[oldAddress]; //取出旧的dataitem
+                                DataItem olddataItem = (DataItem)htClient[oldAddress]; //取出旧的dataitem
                                 //更新进哈希表
                                 dataItem.intDeviceID = intdeviceID;
                                 dataItem.status = olddataItem.status;
@@ -422,6 +422,7 @@ namespace WizepipesSocketServer
                             }
                         }
                     } //end of foreach
+
                     if (deleteAddress != null && htClient.ContainsKey(deleteAddress))
                     {
                         htClient.Remove(deleteAddress);
@@ -429,8 +430,7 @@ namespace WizepipesSocketServer
                     }
 
                     //采集完成，准备上传
-                    if (adFinishedClientNum >= (htClient.Count - offlineClientNum - maxBadClient) &&
-                        (adFinishedClientNum > maxBadClient))
+                    if (adFinishedClientNum >= (htClient.Count - offlineClientNum - maxBadClient) && (adFinishedClientNum > maxBadClient))
                     {
                         //开始上传
                         Console.WriteLine("开始上传");
@@ -438,9 +438,7 @@ namespace WizepipesSocketServer
                         Log.Debug("开始上传");
                     }
                     //上传完成，准备分析
-                    if ((AnalyzeList.Count >= htClient.Count - offlineClientNum - maxBadClient) &&
-                        (AnalyzeList.Count > maxBadClient) &&
-                        adUploadingAndOnlineClinetNum == 0) //没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
+                    if ((AnalyzeList.Count >= htClient.Count - offlineClientNum - maxBadClient) && (AnalyzeList.Count > maxBadClient) && adUploadingAndOnlineClinetNum == 0) //没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                     {
                         AnalyzeData(); //分析AD数据并保存结果到数据库
 
@@ -467,7 +465,7 @@ namespace WizepipesSocketServer
         //读取数据库命令线程
         public void CheckDataBaseQueue(object state)
         {
-            List<string> cfgList = new List<string>(); //存储从数据库读取的设备配置参数
+            List<int> cfgList = new List<int>(); //存储从数据库读取的设备配置参数
             //收到设备数据后写数据库，表示有回复（发送成功），不再重复发送
             while (IsServerOpen)
             {
@@ -480,92 +478,104 @@ namespace WizepipesSocketServer
                         if (cfgList != null)
                         {
                             Queue<byte[]> DbCmdQueue = new Queue<byte[]>();
-                            
 
-                            if ((Convert.ToInt32(cfgList[0]) == 1))//设置采样时刻
+                            //Convert.ToInt32(null) == 0;
+                            if (cfgList[0] == 1)//设置采样时刻
                             {
                                 byte[] cmdCapTime = cmdItem.CmdSetCapTime;
-                                cmdCapTime[9] = (byte)(Convert.ToInt32(cfgList[8]));
-                                cmdCapTime[10] = (byte)(Convert.ToInt32(cfgList[9]));
+                                cmdCapTime[9] = (byte)(Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeHour")));
+                                cmdCapTime[10] = (byte)(Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeMinute")));
 
+                                Console.WriteLine("向设备号" + dataItem.intDeviceID+"--加入的命令是:"+ byteToHexStr(cmdCapTime));
                                 DbCmdQueue.Enqueue(cmdCapTime);
                             }
-                            if ((Convert.ToInt32(cfgList[1]) == 1))//设置开启和关闭时长
+                            if (cfgList[1] == 1)//设置开启和关闭时长
                             {
-                                int OpenTime = 2 * Convert.ToInt32(Convert.ToInt32(cfgList[10]));
-                                int CloseTime = 2 * Convert.ToInt32(Convert.ToInt32(cfgList[11]));
+                                int OpenTime = 2 * (Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "OpenTime")));
+                                int CloseTime = 2 * (Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "CloseTime")));
                                 byte[] cmdSetOpenAndCloseTime = cmdItem.CmdSetOpenAndCloseTime;
                                 cmdSetOpenAndCloseTime[9] = (byte)(OpenTime >> 8);
                                 cmdSetOpenAndCloseTime[10] = (byte)(OpenTime & 0xFF);
                                 cmdSetOpenAndCloseTime[11] = (byte)(CloseTime >> 8);
                                 cmdSetOpenAndCloseTime[12] = (byte)(CloseTime & 0xFF);
 
+                                Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdSetOpenAndCloseTime));
                                 DbCmdQueue.Enqueue(cmdSetOpenAndCloseTime);
                             }
-                            if ((Convert.ToInt32(cfgList[2]) == 1))//是否立即采样
+                            if (cfgList[2] == 1)//是否立即采样
                             {
                                 dataItem.status.IsGetADNow = true;
                                 dataItem.status.adStage = AdStage.Idle;
                                 DbCmdQueue.Enqueue(SetCapTime(dataItem.intDeviceID));
                             }
-                            if ((Convert.ToInt32(cfgList[3]) == 1))//是否读取Gps经纬度信息
+                            if (cfgList[3] == 1)//是否读取Gps经纬度信息
                             {
                                 DbCmdQueue.Enqueue(cmdItem.CmdReadGPSData);
                             }
-                            if ((Convert.ToInt32(cfgList[4]) == 1))//是否设置AP名称
+                            if (cfgList[4] == 1)//是否设置AP名称
                             {
                                 byte[] Cmd = cmdItem.CmdSetAPssid;
-                                byte[] SetAPName = strToByte(cfgList[12]);//转换成字符型
+                                byte[] SetAPName = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApName"));//转换成字符型
                                 for (int i = 0, j = 9; i < SetAPName.Length; i++)
                                 {
                                     Cmd[j++] = SetAPName[i];
                                 }
                                 DbCmdQueue.Enqueue(Cmd);
                             }
-                            if ((Convert.ToInt32(cfgList[5]) == 1))//是否设置AP密码
+                            if (cfgList[5] == 1)//是否设置AP密码
                             {
                                 byte[] Cmd = cmdItem.CmdSetAPpassword;
-                                byte[] SetAPpassword = strToByte(cfgList[13]);
+                                byte[] SetAPpassword = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApPassword"));
                                 for (int i = 0, j = 9; i < SetAPpassword.Length; i++)
                                 {
                                     Cmd[j++] = SetAPpassword[i];
                                 }
                                 DbCmdQueue.Enqueue(Cmd);
                             }
-                            if ((Convert.ToInt32(cfgList[6]) == 1))//是否设置Server的IP
+                            if (cfgList[6] == 1)//是否设置Server的IP
                             {
-                                byte[] Cmd = cmdItem.CmdSetAPpassword;
-                                //TODO:!!!去除小数点
+                                byte[] Cmd = cmdItem.CmdSetServerIP;
+                                string ipAddress = NetDb.readsensorcfgItem(dataItem.intDeviceID, "ServerIP");
+                                string[] sArray = ipAddress.Split(new char[] { '.' });
+                                
+                                Cmd[9] = Convert.ToByte(sArray[0]);
+                                Cmd[10] = Convert.ToByte(sArray[1]);
+                                Cmd[11] = Convert.ToByte(sArray[2]);
+                                Cmd[12] = Convert.ToByte(sArray[3]);
+                                DbCmdQueue.Enqueue(Cmd);
                             }
-                            if ((Convert.ToInt32(cfgList[7]) == 1))//是否设置Server的Port
+                            if (cfgList[7] == 1)//是否设置Server的Port
                             {
                                 byte[] Cmd = cmdItem.CmdSetServerPort;
                                 byte[] bytePort = new byte[2];
 
-                                int port = Convert.ToInt32(cfgList[15]);
+                                int port = Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ServerPort"));
                                 bytePort = intToBytes(port);
                                 Cmd[9] = bytePort[0];
                                 Cmd[10] = bytePort[1];
                                 DbCmdQueue.Enqueue(Cmd);
                             }
+                            if (cfgList[8] == 1) //设备重连
+                            {
+                                byte[] CmdReconnectTcp = cmdItem.CmdReconnectTcp;
+                                DbCmdQueue.Enqueue(CmdReconnectTcp);
+                            }
 
-                            
-                            if (!htSendCmd.ContainsKey(dataItem.intDeviceID)) //不存在ID则添加
+                            //把从数据库读取的命令添加到队列中
+                            if (!htSendCmd.ContainsKey(dataItem.intDeviceID) && DbCmdQueue.Count>0) //不存在ID则添加
                             {
                                 htSendCmd.Add(dataItem.intDeviceID, DbCmdQueue);
                                 string msg = "设备号:" + dataItem.intDeviceID + "不存在ID则添加,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
-                            else //存在则更新
+                            else if(DbCmdQueue.Count > 0) //存在则更新
                             {
                                 htSendCmd[dataItem.intDeviceID] = DbCmdQueue;
                                 string msg = "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
-
-
                         }
 
                     } //end of foreach
@@ -591,11 +601,14 @@ namespace WizepipesSocketServer
                 for (int j = i + 1; j < AnalyzeList.Count; j++)
                 {
                     int idB = AnalyzeList[j];
+                    //TODO:具体的业务操作
+
+
                     resultList = Net_Analyze.AutoAnalyze(idA, idB);
                     Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), 0,
                         resultList[1], resultList[2], resultList[3]);
                     Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
-                    Log.Debug("图片路径分别为：" + resultList[1]+ resultList[2]+ resultList[3]);
+                    Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                     Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                     Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                 }
@@ -638,13 +651,13 @@ namespace WizepipesSocketServer
                 for (long i = 0; i < bytes.Length; i++)
                 {
                     if (i == 3)
-                        returnInt += (int) bytes[i];
+                        returnInt += (int)bytes[i];
                     else if (i == 2)
-                        returnInt += (int) bytes[i] * 256;
+                        returnInt += (int)bytes[i] * 256;
                     else if (i == 1)
-                        returnInt += (int) bytes[i] * 65536;
+                        returnInt += (int)bytes[i] * 65536;
                     else if (i == 0)
-                        returnInt += (int) bytes[i] * 16777216;
+                        returnInt += (int)bytes[i] * 16777216;
                 }
             }
             return returnInt;
@@ -701,14 +714,14 @@ namespace WizepipesSocketServer
             byte[] cmd = cmdItem.CmdSetCapTime;
             if (DateTime.Now.Minute + CapNextTime <= 59)
             {
-                cmd[9] = (byte) DateTime.Now.Hour;
-                cmd[10] = (byte) (DateTime.Now.Minute + CapNextTime); //当前时刻加5分钟
+                cmd[9] = (byte)DateTime.Now.Hour;
+                cmd[10] = (byte)(DateTime.Now.Minute + CapNextTime); //当前时刻加5分钟
             }
             else
             {
                 //分钟数大于60
-                cmd[9] = (byte) (DateTime.Now.Hour + 1);
-                cmd[10] = (byte) (DateTime.Now.Minute + CapNextTime - 60 + 1);
+                cmd[9] = (byte)(DateTime.Now.Hour + 1);
+                cmd[10] = (byte)(DateTime.Now.Minute + CapNextTime - 60 + 1);
             }
 
             if (IsAutoTest == true)
