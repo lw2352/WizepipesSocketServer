@@ -29,20 +29,28 @@ namespace WizepipesSocketServer
             string ConfigPort = System.Configuration.ConfigurationManager.AppSettings["ServerPort"];
             string ConfigbufferLength = System.Configuration.ConfigurationManager.AppSettings["bufferLength"];
             string ConfigAdlength = System.Configuration.ConfigurationManager.AppSettings["Adlength"];
-            string ConfigcheckRecDataQueueTimeInterval = System.Configuration.ConfigurationManager.AppSettings["checkRecDataQueueTimeInterval"];
-            string ConfigcheckSendDataQueueTimeInterval = System.Configuration.ConfigurationManager.AppSettings["checkSendDataQueueTimeInterval"];
-            string ConfigcheckDataBaseQueueTimeInterval = System.Configuration.ConfigurationManager.AppSettings["checkDataBaseQueueTimeInterval"];
-            string Configg_totalPackageCount = System.Configuration.ConfigurationManager.AppSettings["g_totalPackageCount"];
+            string ConfigcheckRecDataQueueTimeInterval =
+                System.Configuration.ConfigurationManager.AppSettings["checkRecDataQueueTimeInterval"];
+            string ConfigcheckSendDataQueueTimeInterval =
+                System.Configuration.ConfigurationManager.AppSettings["checkSendDataQueueTimeInterval"];
+            string ConfigcheckDataBaseQueueTimeInterval =
+                System.Configuration.ConfigurationManager.AppSettings["checkDataBaseQueueTimeInterval"];
+            string Configg_totalPackageCount =
+                System.Configuration.ConfigurationManager.AppSettings["g_totalPackageCount"];
             string ConfigmaxTimeOut = System.Configuration.ConfigurationManager.AppSettings["maxTimeOut"];
             string ConfigmaxBadClient = System.Configuration.ConfigurationManager.AppSettings["maxBadClient"];
             string ConfigIsAutoTest = System.Configuration.ConfigurationManager.AppSettings["IsAutoTest"];
             string ConfigCapNextTime = System.Configuration.ConfigurationManager.AppSettings["CapNextTime"];
             string DB = System.Configuration.ConfigurationManager.AppSettings["ServerDB"];
 
-            msg = "从appConfig读取到的配置信息是：" + "ServerIP:" + ConfigIp + "\r\nServerPort:" + ConfigPort + "\r\nbufferLength:" + ConfigbufferLength + "\r\nAdlength:" + ConfigAdlength +
-                  "\r\n接收数据线程休息时间："+ConfigcheckRecDataQueueTimeInterval + "\r\n发送数据线程休息时间：" + ConfigcheckSendDataQueueTimeInterval +
+            msg = "从appConfig读取到的配置信息是：" + "ServerIP:" + ConfigIp + "\r\nServerPort:" + ConfigPort +
+                  "\r\nbufferLength:" + ConfigbufferLength + "\r\nAdlength:" + ConfigAdlength +
+                  "\r\n接收数据线程休息时间：" + ConfigcheckRecDataQueueTimeInterval + "\r\n发送数据线程休息时间：" +
+                  ConfigcheckSendDataQueueTimeInterval +
                   "\r\n读取数据库线程休息时间：" + ConfigcheckDataBaseQueueTimeInterval
-            +"\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长："+ConfigmaxTimeOut + "\r\n允许故障设备数：" + ConfigmaxBadClient + "\r\n是否自动测试："+ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB+ "\r\n自动采样的间隔时长" + ConfigCapNextTime;
+                  + "\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长：" + ConfigmaxTimeOut + "\r\n允许故障设备数：" +
+                  ConfigmaxBadClient + "\r\n是否自动测试：" + ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB + "\r\n自动采样的间隔时长" +
+                  ConfigCapNextTime;
 
             richTextBox1.AppendText(msg);
             //共12+1个
@@ -63,7 +71,7 @@ namespace WizepipesSocketServer
         }
 
         private void button1_Click(object sender, EventArgs e)
-        {            
+        {
             server.OpenServer();
         }
 
@@ -79,7 +87,9 @@ namespace WizepipesSocketServer
                 server.CfgIsAutoTest = 1;
             }
             else
-            { server.CfgIsAutoTest = 0;}
+            {
+                server.CfgIsAutoTest = 0;
+            }
             server.SetCapTime(0xFF);
         }
 
@@ -92,7 +102,7 @@ namespace WizepipesSocketServer
         {
             string msg = server.ViewClientInfo();
             if (msg != null)
-            richTextBox1.AppendText(msg);
+                richTextBox1.AppendText(msg);
         }
 
         private void buttonClear_Click(object sender, EventArgs e)
@@ -102,9 +112,16 @@ namespace WizepipesSocketServer
 
         private void buttonAnalyze_Click(object sender, EventArgs e)
         {
-            server.CalculateOffset(7,5,1000,5000);
+            //server.CalculateOffset(7, 5, 1000, 5000);
             //List<int> testList = NetDb.GetpipeInfo(3,4);
             //string name = NetDb.GetSensorName(3);
+            byte[] CmdReadCurrentOpenAndCloseTime = new byte[] { 0xA5, 0xA5, 0x21, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x5A, 0x5A };
+            List<byte[]> AnalyzeList = new List<byte[]>();
+            AnalyzeList.Add(CmdReadCurrentOpenAndCloseTime);
+            byte test = AnalyzeList[0][0];
+
         }
+
+
     }
 }

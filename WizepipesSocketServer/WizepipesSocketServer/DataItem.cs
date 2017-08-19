@@ -342,7 +342,7 @@ namespace WizepipesSocketServer
             catch (Exception ex)
             {
                 Log.Debug(ex);
-                string error = DateTime.Now.ToString() + "出错信息：" + "---" + ex.Message + "\n";
+                string error = DateTime.Now.ToString() + "出错信息：" + "--服务端主动断开连接--" + ex.Message + "\n";
                 System.Diagnostics.Debug.WriteLine(error);
             }
         }

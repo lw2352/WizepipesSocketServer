@@ -9,6 +9,11 @@ using System.Net.Sockets;
 using System.Threading;
 //[assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
+//TODO:1.自动测试的方法要改规范
+//2.协商计划任务的多时刻采样做到msp430里面，每次采样完成后都把时间跳到下一个，0x02表示立即采样命令而不是定时采样命令
+//3.在线和离线设备要区分开来
+//4.要自己用的习惯
+
 namespace WizepipesSocketServer
 {
     class SocketServer
@@ -407,6 +412,7 @@ namespace WizepipesSocketServer
                             if (dataItem.status.IsCaptureNow == true)
                             {
                                 //TODO:如果要多用户操作，需要数据库加表，程序中建立<用户ID,立即采样类（设备idA--idB）>哈希表，然后异步beginInvoke进行数据的分析
+                                //TODO:计划任务的数据分析和立即采样的要分别对待
                                 //立即采样完成后，重新设置一次采样时刻
                                 NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsSetCapTime", 1);
                                 dataItem.status.IsCaptureNow = false;
@@ -572,7 +578,8 @@ namespace WizepipesSocketServer
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
-                            else if(DbCmdQueue.Count > 0) //存在则更新
+                            //TODO:应该在前面if (cfgList != null)判断ID是否存在，若存在则判断contains，不能重复添加相同的指令，尤其是立即采样指令
+                            else if (DbCmdQueue.Count > 0) //存在则更新
                             {
                                 htSendCmd[dataItem.intDeviceID] = DbCmdQueue;
                                 string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
