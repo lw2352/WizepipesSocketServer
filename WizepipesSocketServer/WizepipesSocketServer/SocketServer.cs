@@ -281,6 +281,8 @@ namespace WizepipesSocketServer
                                     dataItem.status.HeartTime.ToString(),
                                     Convert.ToInt32(dataItem.status.clientStage),
                                     Convert.ToInt32(dataItem.status.adStage));
+                                NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsGetGpsInfo", 1);
+
                                 Log.Debug("新设备号:" + intdeviceID + "-地址为" + dataItem.strAddress + "-已连接");
                             }
                             else
@@ -300,6 +302,7 @@ namespace WizepipesSocketServer
                                     dataItem.status.HeartTime.ToString(),
                                     Convert.ToInt32(dataItem.status.clientStage),
                                     Convert.ToInt32(dataItem.status.adStage));
+                                NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsGetGpsInfo", 1);
 
                                 htClient.Remove(oldAddress); //删除旧地址的键值对
                                 Log.Debug("设备号为:" + intdeviceID + "删除旧地址:" + oldAddress + "添加新地址:" +
@@ -565,14 +568,14 @@ namespace WizepipesSocketServer
                             if (!htSendCmd.ContainsKey(dataItem.intDeviceID) && DbCmdQueue.Count>0) //不存在ID则添加
                             {
                                 htSendCmd.Add(dataItem.intDeviceID, DbCmdQueue);
-                                string msg = "设备号:" + dataItem.intDeviceID + "不存在ID则添加,htSendCmd添加命令队列成功";
+                                string msg = DateTime.Now+"设备号:" + dataItem.intDeviceID + "不存在ID则添加,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
                             else if(DbCmdQueue.Count > 0) //存在则更新
                             {
                                 htSendCmd[dataItem.intDeviceID] = DbCmdQueue;
-                                string msg = "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
+                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
@@ -602,15 +605,37 @@ namespace WizepipesSocketServer
                 {
                     int idB = AnalyzeList[j];
                     //TODO:具体的业务操作
+                    List<int> pipeInfoList = NetDb.GetpipeInfo(idA, idB);
+                    if (pipeInfoList != null && pipeInfoList[0] != 0 && pipeInfoList[1] != 0 && pipeInfoList[2] != 0)
+                    {
+                        string distance = "";
+                        string sensorName = "";
+                        sensorName = NetDb.GetSensorName(idA);
+                        if (pipeInfoList[3] != 0)//读出了管子长度
+                        {
+                            resultList = Net_Analyze.AutoAnalyze(idA, idB);
+                          
+                            if (idA == pipeInfoList[0] && idB == pipeInfoList[1])
+                            {
+                                distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
+                            }
+                            else
+                            {
+                                distance = (CalculateOffset(-Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
+                            }
+                            
+                        }
+                        else distance = "fail";
 
+                        Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[1],
+                            resultList[1], resultList[2], resultList[3], sensorName, distance);
+                        Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
+                        Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
+                        Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
+                        Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
+                        Console.WriteLine("管道信息为：" + "管子ID："+ pipeInfoList[1] + "SensorName："+sensorName + "距离是："+distance);
+                    }
 
-                    resultList = Net_Analyze.AutoAnalyze(idA, idB);
-                    Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), 0,
-                        resultList[1], resultList[2], resultList[3]);
-                    Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
-                    Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
-                    Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
-                    Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                 }
             }
             AnalyzeList.Clear();
@@ -627,6 +652,25 @@ namespace WizepipesSocketServer
             }
             return null;
         }
+
+        /*
+       *根据参数计算偏移值
+       *偏移点数：n    正数A超前B，负数A滞后B
+       *管道长度：l  
+       *传播速率：v    1000m/s
+       *采样频率：f    5000Hz
+       *计算公式：x=1/2*(l-n*v/f)
+       */
+        private float CalculateOffset(int n, int l, int v, int f)
+        {
+            float x = (1 / 2 * (l - n * v / f));
+            //保留3位小数
+            x = (int) (x * 1000);
+            x = x / 1000;
+
+            return x;
+        }
+
 
         // 字节数组转16进制字符串 
         private static string byteToHexStr(byte[] bytes)

@@ -89,7 +89,7 @@
             this.buttonAnalyze.Name = "buttonAnalyze";
             this.buttonAnalyze.Size = new System.Drawing.Size(75, 23);
             this.buttonAnalyze.TabIndex = 32;
-            this.buttonAnalyze.Text = "分析";
+            this.buttonAnalyze.Text = "myTest";
             this.buttonAnalyze.UseVisualStyleBackColor = true;
             this.buttonAnalyze.Click += new System.EventHandler(this.buttonAnalyze_Click);
             // 

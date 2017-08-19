@@ -191,6 +191,7 @@ namespace WizepipesSocketServer
                             Console.WriteLine(msg);
                             Log.Debug(msg);
                             NetDb.UpdateSensorCfg(intDeviceID, "IsSetCapTime", 0);
+                            NetDb.UpdateSensorCfg(intDeviceID, "IsCaptureNow", 0); 
                         }
 
                         break;
@@ -221,12 +222,18 @@ namespace WizepipesSocketServer
 
                         //把经纬度写入数据库;在addsensorcfg后面加上IsGetGPSinfo，hex加到3
                         if (Longitude > 0 && Latitude > 0)
-                        {
+                        {//保留6位小数
+                            Longitude = (int) Longitude * 1000000;
+                            Longitude = Longitude / 1000000;
+
+                            Latitude = (int)Latitude * 1000000;
+                            Latitude = Latitude / 1000000;
+
                             NetDb.UpdateSensorGPSinfo(intDeviceID, Longitude, Latitude);
                         }
                         else
                         {
-                            NetDb.UpdateSensorGPSinfo(intDeviceID, 0, 0);
+                            NetDb.UpdateSensorGPSinfo(intDeviceID, -1, -1);
                         }
                         //经纬度信息读取成功,把标志位复位
                         NetDb.UpdateSensorCfg(intDeviceID, "IsGetGpsInfo", 0);
@@ -352,9 +359,7 @@ namespace WizepipesSocketServer
                     Console.WriteLine("设备号：" + intDeviceID + "超时,服务器主动断开连接");
                     Log.Debug("设备号：" + intDeviceID + "超时,服务器主动断开连接");
                     status.clientStage = ClientStage.offLine;
-                    NetDb.addsensorinfo(intDeviceID, strAddress, strAddress,
-                        status.HeartTime.ToString(),
-                        Convert.ToInt32(status.clientStage), Convert.ToInt32(status.adStage));
+                    NetDb.UpdateSensorInfo(intDeviceID, "Status", Convert.ToInt32(ClientStage.offLine));
                     CloseSocket();
                 }
             }

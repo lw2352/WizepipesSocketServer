@@ -22,7 +22,7 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     if (ds1.Tables[0].Rows.Count > 0)
-                    // 有数据集
+                        // 有数据集
                     {
                         sensorid = ds1.Tables[0].Rows[0][0].ToString();
 
@@ -129,6 +129,43 @@ namespace WizepipesSocketServer
 
         }
 
+        public static string UpdateSensorInfo(int sensorintdeviceID, string updateItem, int updateNum)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL =
+                "Update tsensorinfo SET " + updateItem + " =?sensorupdateItem WHERE intdeviceID=?sensorintdeviceID";
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorupdateItem", MySqlDbType.Int32),
+            };
+            parmss[0].Value = sensorintdeviceID;
+            parmss[1].Value = updateNum;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
         public static string UpdateSensorGPSinfo(int sensorintdeviceID, double Longitude, double Latitude)
         {
             MySQLDB.InitDb();
@@ -181,7 +218,7 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     if (ds1.Tables[0].Rows.Count > 0)
-                    // 有数据集
+                        // 有数据集
                     {
                         sensorid = ds1.Tables[0].Rows[0][0].ToString();
 
@@ -251,7 +288,7 @@ namespace WizepipesSocketServer
                     if (ds1 != null)
                     {
                         if (ds1.Tables[0].Rows.Count > 0)
-                        // 有数据集
+                            // 有数据集
                         {
                             sensorid = ds1.Tables[0].Rows[0][0].ToString();
                             //向子表插入数据
@@ -486,7 +523,7 @@ namespace WizepipesSocketServer
                         resultList.Add(ds1.Tables[0].Rows[0]["ServerPort"] as string);*/
 
                         string item = (ds1.Tables[0].Rows[0][0]).ToString();
-                        if (item != null && item!="")
+                        if (item != null && item != "")
                         {
                             resultItem = item;
                         }
@@ -510,7 +547,7 @@ namespace WizepipesSocketServer
             string strSQL = "";
             bool IsDelSuccess = false;
             strSQL =
-                "Update tsensorcfg SET " + updateItem + " =?sensorupdateItem WHERE intdeviceID=?sensorintdeviceID";
+                "Update tsensorcfg SET " + updateItem + " =?sensorupdateItem WHERE (intdeviceID=?sensorintdeviceID)";
             parmss = new MySqlParameter[]
             {
                 new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
@@ -539,7 +576,203 @@ namespace WizepipesSocketServer
             }
         }
 
-        #endregion
+        public static List<int> GetpipeInfo(int idA, int idB)
+        {
+            MySQLDB.InitDb();
+            int sensorAID = 0;
+            int sensorBID = 0;
+            int pipeID = 0;
+            int pipeLength = 0;
+            List<int> resultList = new List<int>();
+            //从数据库中查找当前ID是否存在
+            try
+            {
+                DataSet ds1 = new DataSet("tsensor");
+                string strSQL1 =
+                    "SELECT SensorID FROM tsensor where (intdeviceID=" + idA + " or intdeviceID=" + idB + ")";
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    // 有数据集
+                    if (ds1.Tables[0].Rows.Count > 0)
+                    {
+                        string item0 = (ds1.Tables[0].Rows[0]["SensorID"]).ToString();
+                        if (item0 != null && item0 != "")
+                        {
+                            sensorAID = (Convert.ToInt32(item0));
+                        }
+                        else sensorAID = 0;
 
+                        string item1 = (ds1.Tables[0].Rows[1]["SensorID"]).ToString();
+                        if (item1 != null && item1 != "")
+                        {
+                            sensorBID = (Convert.ToInt32(item1));
+                        }
+                        else sensorBID = 0;
+
+                    }
+                } //end of if (ds1 != null)
+
+                if (sensorAID != 0 && sensorBID != 0)
+                {
+                    DataSet ds2 = new DataSet("tsensormatch");
+                    string strSQL2 =
+                        "SELECT PipeID FROM tsensormatch where ((SensorAID=" + sensorAID + " and SensorBID=" +
+                        sensorBID + ") or (SensorAID=" + sensorBID + " and SensorBID=" + sensorAID + "))";
+                    ds2 = MySQLDB.SelectDataSet(strSQL2, null);
+                    if (ds2 != null)
+                    {
+                        // 有数据集
+                        if (ds2.Tables[0].Rows.Count > 0)
+                        {
+                            string item3 = (ds2.Tables[0].Rows[0]["PipeID"]).ToString();
+                            if (item3 != null && item3 != "")
+                            {
+                                pipeID = (Convert.ToInt32(item3));
+                            }
+                            else pipeID = 0;
+                        }
+                    }
+                } //end of if (sensorAID != 0 && sensorBID != 0)
+
+                if (pipeID != 0)
+                {
+                    DataSet ds3 = new DataSet("tpipe");
+                    string strSQL3 =
+                        "SELECT PipeLength FROM tpipe where PipeID=" + pipeID;
+                    ds3 = MySQLDB.SelectDataSet(strSQL3, null);
+                    if (ds3 != null)
+                    {
+                        // 有数据集
+                        if (ds3.Tables[0].Rows.Count > 0)
+                        {
+                            string length = (ds3.Tables[0].Rows[0]["PipeLength"]).ToString();
+                            if (length != null && length != "")
+                            {
+                                pipeLength = (Convert.ToInt32(length));
+                            }
+                            else pipeLength = 0;
+                        }
+                    }
+                }
+                //读数据以存储的经纬度
+                if (pipeLength == 0)
+                {
+                    double lng1,lat1,lng2,lat2;
+                    lng1=lat1=lng2=lat2 = 0;
+
+                    DataSet ds4 = new DataSet("tpipe");
+                    string strSQL4 =
+                        "SELECT StartLocation, EndLocation FROM tpipe where PipeID=" + pipeID;
+                    ds4= MySQLDB.SelectDataSet(strSQL4, null);
+                    if (ds4 != null)
+                    {
+                        // 有数据集
+                        if (ds4.Tables[0].Rows.Count > 0)
+                        {
+                            string StartLocation = (ds4.Tables[0].Rows[0]["StartLocation"]).ToString();
+                            if (StartLocation != null && StartLocation != "")
+                            {
+                                string[] sArray = StartLocation.Split(new char[] {','});
+                                lng1 = Convert.ToDouble(sArray[0]);
+                                lat1 = Convert.ToDouble(sArray[1]);
+                            }
+                            else lng1 = lat1 = 0;
+
+                            string EndLocation = (ds4.Tables[0].Rows[0]["EndLocation"]).ToString();
+                             if (EndLocation != null && EndLocation != "")
+                            {
+                                string[] sArray = EndLocation.Split(new char[] { ',' });
+                                lng2 = Convert.ToDouble(sArray[0]);
+                                lat2 = Convert.ToDouble(sArray[1]);
+                            }
+                            else lng2 = lat2 = 0;
+                        }
+                        if ((lng1 != 0) && (lat1 != 0) && (lng2 != 0) && (lat2 != 0))
+                        {
+                            pipeLength = (int) GPSDistance.getGpsDistance(lng1, lat1, lng2, lat2);
+                        }
+                        else pipeLength = 0;
+                    }
+                }
+                //读设备的经纬度
+                if (pipeLength == 0)
+                {
+                    double lng1, lat1, lng2, lat2;
+                    lng1 = lat1 = lng2 = lat2 = 0;
+
+                    DataSet ds5 = new DataSet("tsensorinfo");
+                    string strSQL5 =
+                        "SELECT Longitude, Latitude FROM tsensorinfo where intdeviceID=" + idA+ " or intdeviceID=" + idB;
+                    ds5 = MySQLDB.SelectDataSet(strSQL5, null);
+                    if (ds5 != null)
+                    {
+                        // 有数据集
+                        if (ds5.Tables[0].Rows.Count > 0)
+                        {
+                            string LongitudeA = (ds5.Tables[0].Rows[0]["Longitude"]).ToString();
+                            string LongitudeB = (ds5.Tables[0].Rows[1]["Longitude"]).ToString();
+                            string LatitudeA = (ds5.Tables[0].Rows[0]["Latitude"]).ToString();
+                            string LatitudeB = (ds5.Tables[0].Rows[1]["Latitude"]).ToString();
+                            if (LongitudeA != "" && LongitudeB != "" && LatitudeA != "" && LatitudeB != "")
+                            {
+                                lng1 = Convert.ToDouble(LongitudeA);
+                                lng2 = Convert.ToDouble(LongitudeB);
+                                lat1 = Convert.ToDouble(LatitudeA);
+                                lat2 = Convert.ToDouble(LatitudeB);
+                            }
+                            else lng1 = lat1 = lng2 = lat2 = 0;
+                        }
+                        if ((lng1 != 0) && (lat1 != 0) && (lng2 != 0) && (lat2 != 0))
+                        {
+                            pipeLength = (int)GPSDistance.getGpsDistance(lng1, lat1, lng2, lat2);
+                        }
+                        else pipeLength = 0;
+                    }
+                }
+
+                resultList.Add(sensorAID);
+                resultList.Add(sensorBID);
+                resultList.Add(pipeID);
+                resultList.Add(pipeLength);
+                return resultList;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        public static string GetSensorName(int sensorID)
+        {
+            string resultItem = null;
+            MySQLDB.InitDb();
+            string sensorName = null;
+            try
+            {
+                DataSet ds1 = new DataSet("tsensorcfg");
+                string strSQL1 =
+                    "SELECT SensorName FROM tsensor where SensorID=" + sensorID;
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    // 有数据集
+                    if (ds1.Tables[0].Rows.Count > 0)
+                    {
+                        sensorName = (ds1.Tables[0].Rows[0]["SensorName"]).ToString();
+                    }
+                }
+                if (sensorName != "")
+                    return sensorName;
+                else return null;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+            #endregion
+
+        }
     }
 }

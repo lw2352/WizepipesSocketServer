@@ -166,7 +166,7 @@ namespace WizepipesSocketServer
 
         //把分析结果写入数据库保存 8-2
         public static string writeAnalyzeResult(int SensorAID, int SensorBID,
-            string AnalyzeResult, string AnalyzeDate, int AnalyzePipe, string pathA, string pathB, string pathC)
+            string AnalyzeResult, string AnalyzeDate, int AnalyzePipe, string pathA, string pathB, string pathC, string sensorName, string distance)
         {
             MySQLDB.InitDb();
             string sensorid = "0";
@@ -176,8 +176,8 @@ namespace WizepipesSocketServer
             MySqlParameter[] parmss = null;
             string strSQL = "";
             bool IsDelSuccess = false;
-            strSQL = " insert into tsensorresult (SensorAID,SensorBID,AnalyzeResult,AnalyzeDate,AnalyzePipe,pathA, pathB, pathC) values" +
-                     "(?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe, ?sensorpathA, ?sensorpathB, ?sensorpathC);";
+            strSQL = " insert into tsensorresult (SensorAID,SensorBID,AnalyzeResult,AnalyzeDate,AnalyzePipe,pathA, pathB, pathC, SensorName, Distance) values" +
+                     "(?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe, ?sensorpathA, ?sensorpathB, ?sensorpathC, ?SensorName, ?Distance);";
 
             parmss = new MySqlParameter[]
             {
@@ -188,7 +188,10 @@ namespace WizepipesSocketServer
                 new MySqlParameter("?sensorAnalyzePipe", MySqlDbType.Int32),
                 new MySqlParameter("?sensorpathA", MySqlDbType.VarChar),
                 new MySqlParameter("?sensorpathB", MySqlDbType.VarChar),
-                new MySqlParameter("?sensorpathC", MySqlDbType.VarChar)
+                new MySqlParameter("?sensorpathC", MySqlDbType.VarChar),
+                new MySqlParameter("?SensorName", MySqlDbType.VarChar),
+                new MySqlParameter("?Distance", MySqlDbType.VarChar)
+
             };
             parmss[0].Value = SensorAID;
             parmss[1].Value = SensorBID;
@@ -198,6 +201,8 @@ namespace WizepipesSocketServer
             parmss[5].Value = pathA;
             parmss[6].Value = pathB;
             parmss[7].Value = pathC;
+            parmss[8].Value = sensorName;
+            parmss[9].Value = distance;
 
             try
             {

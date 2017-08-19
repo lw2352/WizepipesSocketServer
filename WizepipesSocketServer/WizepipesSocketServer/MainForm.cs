@@ -102,15 +102,8 @@ namespace WizepipesSocketServer
 
         private void buttonAnalyze_Click(object sender, EventArgs e)
         {
-            Console.WriteLine("测试开始\r\n");
-            richTextBox1.AppendText("测试开始\r\n");
-            //for (int i = 0; i < 100; i++)
-            //{
-                server.TestZed();
-                //richTextBox1.AppendText("第"+i+"组");
-            //}
-            Console.WriteLine("测试结束\r\n");
-            richTextBox1.AppendText("测试结束\r\n");
+            List<int> testList = NetDb.GetpipeInfo(3,4);
+            string name = NetDb.GetSensorName(3);
         }
     }
 }

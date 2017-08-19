@@ -31,7 +31,7 @@ namespace WizepipesSocketServer
             longitude += ((gpsData[18] - 0x30) / 10.0 + (gpsData[19] - 0x30) / 100.0 + (gpsData[20] - 0x30) / 1000.0 + (gpsData[21] - 0x30) / 10000.0 + (gpsData[22] - 0x30) / 100000.0) / 60.0;
         }
 
-        public static double getGpsDistance(double lat1, double lng1, double lat2, double lng2)
+        public static double getGpsDistance(double lng1, double lat1, double lng2, double lat2)
         {
             double radLat1 = rad(lat1);
             double radLat2 = rad(lat2);
