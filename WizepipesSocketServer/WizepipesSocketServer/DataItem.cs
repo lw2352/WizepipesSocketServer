@@ -25,7 +25,7 @@ namespace WizepipesSocketServer
     public struct Status
     {
         public bool IsSendDataToServer; //发送数据到服务器
-        public bool IsGetADNow;//是否属于立即采样
+        public bool IsCaptureNow;//是否属于立即采样
         public ClientStage clientStage;
         public AdStage adStage;
         public int currentsendbulk; //当前发送的包数
@@ -128,7 +128,7 @@ namespace WizepipesSocketServer
                                   intDeviceID + "--AD采样结束" + "\n";
                             Console.WriteLine(msg);
                             Log.Debug(msg);
-                            if (status.IsGetADNow == true)
+                            if (status.IsCaptureNow == true)
                             {
                                 byte[] CmdAD = { 0xA5, 0xA5, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x06, 0x02, 0x57, 0x00, 0x00, 0x03, 0xE8, 0xFF, 0x5A, 0x5A };
                                 status.IsSendDataToServer = true;

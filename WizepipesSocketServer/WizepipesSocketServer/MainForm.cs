@@ -102,8 +102,9 @@ namespace WizepipesSocketServer
 
         private void buttonAnalyze_Click(object sender, EventArgs e)
         {
-            List<int> testList = NetDb.GetpipeInfo(3,4);
-            string name = NetDb.GetSensorName(3);
+            server.CalculateOffset(7,5,1000,5000);
+            //List<int> testList = NetDb.GetpipeInfo(3,4);
+            //string name = NetDb.GetSensorName(3);
         }
     }
 }

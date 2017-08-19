@@ -382,15 +382,15 @@ namespace WizepipesSocketServer
                             deleteAddress = dataItem.strAddress;
                         }
                         //对立即采样的设备单独处理
-                        if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsGetADNow != true)
+                        if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
                         {
                             adFinishedClientNum++;
                         }
-                        if (dataItem.status.clientStage == ClientStage.offLine && dataItem.status.IsGetADNow != true)
+                        if (dataItem.status.clientStage == ClientStage.offLine && dataItem.status.IsCaptureNow == false)
                         {
                             offlineClientNum++;
                         }
-                        if (dataItem.status.adStage == AdStage.AdUploading && dataItem.status.clientStage == ClientStage.idle && dataItem.status.IsGetADNow != true) //在线且没有上传完毕的设备数要为0，一定要等，才能进行下一步
+                        if (dataItem.status.adStage == AdStage.AdUploading && dataItem.status.clientStage == ClientStage.idle && dataItem.status.IsCaptureNow == false) //在线且没有上传完毕的设备数要为0，一定要等，才能进行下一步
                         {
                             adUploadingAndOnlineClinetNum++;
                         }
@@ -400,16 +400,16 @@ namespace WizepipesSocketServer
                             {
                                 AnalyzeList.Add(dataItem.intDeviceID); //添加id号
                             }
-                            if (dataItem.status.IsGetADNow != true && IsAutoTest == false)
+                            if (dataItem.status.IsCaptureNow == false && IsAutoTest == false)
                             {
                                 dataItem.status.adStage = AdStage.Idle;
                             }
-                            if (dataItem.status.IsGetADNow == true)
+                            if (dataItem.status.IsCaptureNow == true)
                             {
                                 //TODO:如果要多用户操作，需要数据库加表，程序中建立<用户ID,立即采样类（设备idA--idB）>哈希表，然后异步beginInvoke进行数据的分析
                                 //立即采样完成后，重新设置一次采样时刻
                                 NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsSetCapTime", 1);
-                                dataItem.status.IsGetADNow = false;
+                                dataItem.status.IsCaptureNow = false;
                                 dataItem.status.adStage = AdStage.Idle;
                                 Log.Debug("立即采样完成后，重新设置一次采样时刻");
 
@@ -507,7 +507,7 @@ namespace WizepipesSocketServer
                             }
                             if (cfgList[2] == 1)//是否立即采样
                             {
-                                dataItem.status.IsGetADNow = true;
+                                dataItem.status.IsCaptureNow = true;
                                 dataItem.status.adStage = AdStage.Idle;
                                 DbCmdQueue.Enqueue(SetCapTime(dataItem.intDeviceID));
                             }
@@ -627,7 +627,7 @@ namespace WizepipesSocketServer
                         }
                         else distance = "fail";
 
-                        Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[1],
+                        Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[2],
                             resultList[1], resultList[2], resultList[3], sensorName, distance);
                         Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                         Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
@@ -661,9 +661,9 @@ namespace WizepipesSocketServer
        *采样频率：f    5000Hz
        *计算公式：x=1/2*(l-n*v/f)
        */
-        private float CalculateOffset(int n, int l, int v, int f)
+        public double CalculateOffset(double n, double l, double v, double f)
         {
-            float x = (1 / 2 * (l - n * v / f));
+            double x = (0.5 * (l - n * v / f));
             //保留3位小数
             x = (int) (x * 1000);
             x = x / 1000;
