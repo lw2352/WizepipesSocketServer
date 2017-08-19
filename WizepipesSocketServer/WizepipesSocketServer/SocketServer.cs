@@ -377,21 +377,20 @@ namespace WizepipesSocketServer
                     {
                         dataItem.SendData();
                         dataItem.CheckTimeout(maxTimeOut);
-                        if (dataItem.status.clientStage == ClientStage.offLine &&
-                            dataItem.intDeviceID == 0) //7-28 无效项，需删除
+                        if (dataItem.status.clientStage == ClientStage.offLine && dataItem.intDeviceID == 0) //7-28 无效项，需删除
                         {
                             deleteAddress = dataItem.strAddress;
                         }
-                        if (dataItem.status.adStage == AdStage.AdFinished)
+                        //对立即采样的设备单独处理
+                        if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsGetADNow != true)
                         {
                             adFinishedClientNum++;
                         }
-                        if (dataItem.status.clientStage == ClientStage.offLine)
+                        if (dataItem.status.clientStage == ClientStage.offLine && dataItem.status.IsGetADNow != true)
                         {
                             offlineClientNum++;
                         }
-                        if (dataItem.status.adStage == AdStage.AdUploading &&
-                            dataItem.status.clientStage == ClientStage.idle) //在线且没有上传完毕的设备数要为0，一定要等，才能进行下一步
+                        if (dataItem.status.adStage == AdStage.AdUploading && dataItem.status.clientStage == ClientStage.idle && dataItem.status.IsGetADNow != true) //在线且没有上传完毕的设备数要为0，一定要等，才能进行下一步
                         {
                             adUploadingAndOnlineClinetNum++;
                         }
@@ -401,12 +400,13 @@ namespace WizepipesSocketServer
                             {
                                 AnalyzeList.Add(dataItem.intDeviceID); //添加id号
                             }
-                            if (dataItem.status.IsGetADNow == false && IsAutoTest == false)
+                            if (dataItem.status.IsGetADNow != true && IsAutoTest == false)
                             {
                                 dataItem.status.adStage = AdStage.Idle;
                             }
                             if (dataItem.status.IsGetADNow == true)
                             {
+                                //TODO:如果要多用户操作，需要数据库加表，程序中建立<用户ID,立即采样类（设备idA--idB）>哈希表，然后异步beginInvoke进行数据的分析
                                 //立即采样完成后，重新设置一次采样时刻
                                 NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsSetCapTime", 1);
                                 dataItem.status.IsGetADNow = false;
