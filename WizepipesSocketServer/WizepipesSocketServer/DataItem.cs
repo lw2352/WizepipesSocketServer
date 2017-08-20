@@ -353,7 +353,7 @@ namespace WizepipesSocketServer
             {
                 TimeSpan ts = DateTime.Now.Subtract(status.HeartTime);
                 int elapsedSecond = Math.Abs((int)ts.TotalSeconds);
-
+                //TODO:2分钟在数据库标注，3分钟则断开
                 if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
                 {
                     Console.WriteLine("设备号：" + intDeviceID + "超时,服务器主动断开连接");

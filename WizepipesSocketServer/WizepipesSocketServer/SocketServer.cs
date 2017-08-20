@@ -424,10 +424,11 @@ namespace WizepipesSocketServer
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //发送命令哈希表中是否包含当前dataItem的id
                         {
-                            Queue<byte[]> htsendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
-                            while (htsendCmdQueue != null && htsendCmdQueue.Count > 0)
+                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
+                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
                             {
-                                dataItem.sendDataQueue.Enqueue(htsendCmdQueue.Dequeue()); //复制数据
+                                //TODO：sendCmdQueue应该只读取但不移除，只有当命令发送成功即数据库的IsSet字段为0时才移除
+                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue()); //复制数据
                             }
                         }
                     } //end of foreach
