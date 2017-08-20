@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -120,6 +121,12 @@ namespace WizepipesSocketServer
             AnalyzeList.Add(CmdReadCurrentOpenAndCloseTime);
             byte test = AnalyzeList[0][0];
 
+            Hashtable htTest = new Hashtable();
+            htTest.Add(CmdReadCurrentOpenAndCloseTime, AnalyzeList);
+            if (htTest.Contains(CmdReadCurrentOpenAndCloseTime))
+            {
+                Console.WriteLine("ok");
+            }
         }
 
 
