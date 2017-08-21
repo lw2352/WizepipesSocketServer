@@ -23,7 +23,8 @@ namespace WizepipesSocketServer
         public static Hashtable htClient = new Hashtable(); //strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable(); //intID--QueueCmd
-        public static List<int[]> htMultiUserList;//多用户立即采样,int[] [userID，aID,bID]
+        public static List<int[]> htMultiUserList;//多用户立即采样,int[] [userID，aID,bID]//TODO:用二维数组，没必要用List
+        //TODO:对于区域来说，和多用户立即采样一样，判断时使用for循环
         public static CmdItem cmdItem = new CmdItem(); //实例化
         public List<int> AnalyzeList = new List<int>(); //待分析ID的可变长数组
 
