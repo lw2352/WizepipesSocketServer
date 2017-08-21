@@ -876,7 +876,7 @@ namespace WizepipesSocketServer
                 if (times == -1)
                 {
                     DataSet ds2 = new DataSet("tsensorcfg");
-                    string strSQL2 ="":
+                    string strSQL2 = "insert";
                         
                     ds2 = MySQLDB.SelectDataSet(strSQL2, null);
                     if (ds2 != null)
@@ -890,7 +890,7 @@ namespace WizepipesSocketServer
                 }
                 else //累计加1
                 {
-
+                    //update
                 }
 
             }
