@@ -76,7 +76,6 @@ namespace WizepipesSocketServer
             if (recDataQueue.Count > 0 && status.clientStage == ClientStage.idle)//命令已发送后，得到返回信息需要一段时间，再去解析数据
             {
                 byte[] datagramBytes = recDataQueue.Dequeue();//读取 Queue<T> 开始处的对象并移除
-                //取消委托异步处理，测试界面是否会假死
                 AsyncAnalyzeData method = new AsyncAnalyzeData(AnalyzeData);
                 method.BeginInvoke(datagramBytes, null, null);
             }
@@ -270,6 +269,14 @@ namespace WizepipesSocketServer
                         Console.WriteLine(msg);
                         Log.Debug(msg);
                         NetDb.UpdateSensorCfg(intDeviceID, "IsSetApPassword", 0);
+                        break;
+
+                    case 0x33:
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                              intDeviceID + "--重连设定完成" + "\n";
+                        Console.WriteLine(msg);
+                        Log.Debug(msg);
+                        NetDb.UpdateSensorCfg(intDeviceID, "IsReconnect", 0);
                         break;
 
                     case 0xFF:

@@ -22,7 +22,7 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     if (ds1.Tables[0].Rows.Count > 0)
-                        // 有数据集
+                    // 有数据集
                     {
                         sensorid = ds1.Tables[0].Rows[0][0].ToString();
 
@@ -218,7 +218,7 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     if (ds1.Tables[0].Rows.Count > 0)
-                        // 有数据集
+                    // 有数据集
                     {
                         sensorid = ds1.Tables[0].Rows[0][0].ToString();
 
@@ -288,7 +288,7 @@ namespace WizepipesSocketServer
                     if (ds1 != null)
                     {
                         if (ds1.Tables[0].Rows.Count > 0)
-                            // 有数据集
+                        // 有数据集
                         {
                             sensorid = ds1.Tables[0].Rows[0][0].ToString();
                             //向子表插入数据
@@ -658,13 +658,13 @@ namespace WizepipesSocketServer
                 //读数据以存储的经纬度
                 if (pipeLength == 0)
                 {
-                    double lng1,lat1,lng2,lat2;
-                    lng1=lat1=lng2=lat2 = 0;
+                    double lng1, lat1, lng2, lat2;
+                    lng1 = lat1 = lng2 = lat2 = 0;
 
                     DataSet ds4 = new DataSet("tpipe");
                     string strSQL4 =
                         "SELECT StartLocation, EndLocation FROM tpipe where PipeID=" + pipeID;
-                    ds4= MySQLDB.SelectDataSet(strSQL4, null);
+                    ds4 = MySQLDB.SelectDataSet(strSQL4, null);
                     if (ds4 != null)
                     {
                         // 有数据集
@@ -673,14 +673,14 @@ namespace WizepipesSocketServer
                             string StartLocation = (ds4.Tables[0].Rows[0]["StartLocation"]).ToString();
                             if (StartLocation != null && StartLocation != "")
                             {
-                                string[] sArray = StartLocation.Split(new char[] {','});
+                                string[] sArray = StartLocation.Split(new char[] { ',' });
                                 lng1 = Convert.ToDouble(sArray[0]);
                                 lat1 = Convert.ToDouble(sArray[1]);
                             }
                             else lng1 = lat1 = 0;
 
                             string EndLocation = (ds4.Tables[0].Rows[0]["EndLocation"]).ToString();
-                             if (EndLocation != null && EndLocation != "")
+                            if (EndLocation != null && EndLocation != "")
                             {
                                 string[] sArray = EndLocation.Split(new char[] { ',' });
                                 lng2 = Convert.ToDouble(sArray[0]);
@@ -690,7 +690,7 @@ namespace WizepipesSocketServer
                         }
                         if ((lng1 != 0) && (lat1 != 0) && (lng2 != 0) && (lat2 != 0))
                         {
-                            pipeLength = (int) GPSDistance.getGpsDistance(lng1, lat1, lng2, lat2);
+                            pipeLength = (int)GPSDistance.getGpsDistance(lng1, lat1, lng2, lat2);
                         }
                         else pipeLength = 0;
                     }
@@ -703,7 +703,8 @@ namespace WizepipesSocketServer
 
                     DataSet ds5 = new DataSet("tsensorinfo");
                     string strSQL5 =
-                        "SELECT Longitude, Latitude FROM tsensorinfo where intdeviceID=" + idA+ " or intdeviceID=" + idB;
+                        "SELECT Longitude, Latitude FROM tsensorinfo where intdeviceID=" + idA + " or intdeviceID=" +
+                        idB;
                     ds5 = MySQLDB.SelectDataSet(strSQL5, null);
                     if (ds5 != null)
                     {
@@ -771,8 +772,136 @@ namespace WizepipesSocketServer
                 return null;
             }
 
-            #endregion
+        }
+
+        #endregion
+
+        public static List<int[]> GetDevicePair()
+        {
+            string resultItem = null;
+            MySQLDB.InitDb();
+
+            try
+            {
+                DataSet ds1 = new DataSet("tmultiusercapturenow");
+                string strSQL1 =
+                    "SELECT * FROM tmultiusercapturenow";
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    int i = 0;
+                    int count = ds1.Tables[0].Rows.Count;
+                    List<int[]> result = new List<int[]>(count);
+                    while (i < count)
+                    {
+                        string item = (ds1.Tables[0].Rows[i]["IsFinished"]).ToString();
+                        if (item != "" && Convert.ToInt32(item) == 1)
+                        {
+                            result[i][0] = (int)(ds1.Tables[0].Rows[i]["userID"]);
+                            result[i][1] = (int)(ds1.Tables[0].Rows[i]["SensorAID"]);
+                            result[i][2] = (int)(ds1.Tables[0].Rows[i]["SensorBID"]);
+                        }
+                        i++;
+                    }//end  of while
+                    return result;
+                }
+                else return null;
+
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
 
         }
+
+        public static string UpdateMultiUser(string updateItem, int userID, int updateNum)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL =
+                "Update tmultiusercapturenow SET " + updateItem + " =?sensorupdateItem WHERE userID=?userid";
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?userid", MySqlDbType.Int32),
+                new MySqlParameter("?sensorupdateItem", MySqlDbType.Int32),
+            };
+            parmss[0].Value = userID;
+            parmss[1].Value = updateNum;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
+        public static string UpdateLeakTimes(int pipeID)
+        {
+            MySQLDB.InitDb();
+            int times = -1;
+            //从数据库中查找当前ID是否存在
+            try
+            {
+                DataSet ds1 = new DataSet("tsensorcfg");
+                string strSQL1 =
+                    "SELECT LeakTimes FROM tsensorcfg where pipeID=" + pipeID;
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    // 有数据集
+                    if (ds1.Tables[0].Rows.Count > 0)
+                    {
+                        times = (int)(ds1.Tables[0].Rows[0]["LeakTimes"]);
+                    }
+                }
+
+                //不存在当前管道ID，更新添加为1
+                if (times == -1)
+                {
+                    DataSet ds2 = new DataSet("tsensorcfg");
+                    string strSQL2 ="":
+                        
+                    ds2 = MySQLDB.SelectDataSet(strSQL2, null);
+                    if (ds2 != null)
+                    {
+                        // 有数据集
+                        if (ds2.Tables[0].Rows.Count > 0)
+                        {
+                            times = (int)(ds2.Tables[0].Rows[0]["LeakTimes"]);
+                        }
+                    }
+                }
+                else //累计加1
+                {
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
+
+
+
     }
 }

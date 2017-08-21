@@ -23,6 +23,7 @@ namespace WizepipesSocketServer
         public static Hashtable htClient = new Hashtable(); //strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable(); //intID--QueueCmd
+        public static List<int[]> htMultiUserList;//多用户立即采样,int[] [userID，aID,bID]
         public static CmdItem cmdItem = new CmdItem(); //实例化
         public List<int> AnalyzeList = new List<int>(); //待分析ID的可变长数组
 
@@ -48,6 +49,8 @@ namespace WizepipesSocketServer
         private ManualResetEvent checkSendDataQueueResetEvent = new ManualResetEvent(true);
 
         private ManualResetEvent CheckDataBaseQueueResetEvent = new ManualResetEvent(true);
+        private delegate void AsyncAnalyzeCaptureNowData(int idA,int idB);
+
 
         //初始化服务器，给服务参数赋值
 
@@ -210,8 +213,10 @@ namespace WizepipesSocketServer
                         dataItem.Init(clientSocket, bufferLength, strAddress, 0,
                             Adlength * g_totalPackageCount); //初始化dataItem
 
-                        htClient.Add(strAddress, dataItem);
-
+                        lock (htClient)
+                        {
+                            htClient.Add(strAddress, dataItem);
+                        }
                         Console.WriteLine(DateTime.Now.ToString() + "收到客户端" + strAddress + "的连接请求" + "\n");
                         Log.Debug("收到客户端" + strAddress + "的连接请求" + "\n");
                         //开始从连接的socket异步接收数据
@@ -309,7 +314,10 @@ namespace WizepipesSocketServer
                                     Convert.ToInt32(dataItem.status.adStage));
                                 NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsGetGpsInfo", 1);
 
-                                htClient.Remove(oldAddress); //删除旧地址的键值对
+                                lock (htClient)
+                                {
+                                    htClient.Remove(oldAddress); //删除旧地址的键值对
+                                }
                                 Log.Debug("设备号为:" + intdeviceID + "删除旧地址:" + oldAddress + "添加新地址:" +
                                           dataItem.strAddress);
                             }
@@ -405,7 +413,7 @@ namespace WizepipesSocketServer
                             {
                                 AnalyzeList.Add(dataItem.intDeviceID); //添加id号
                             }
-                            if (dataItem.status.IsCaptureNow == false && IsAutoTest == false)
+                            if (dataItem.status.IsCaptureNow == false)
                             {
                                 dataItem.status.adStage = AdStage.Idle;
                             }
@@ -416,7 +424,7 @@ namespace WizepipesSocketServer
                                 //立即采样完成后，重新设置一次采样时刻
                                 NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsSetCapTime", 1);
                                 dataItem.status.IsCaptureNow = false;
-                                dataItem.status.adStage = AdStage.Idle;
+                                //dataItem.status.adStage = AdStage.Idle;
                                 Log.Debug("立即采样完成后，重新设置一次采样时刻");
 
                             }
@@ -424,18 +432,25 @@ namespace WizepipesSocketServer
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //发送命令哈希表中是否包含当前dataItem的id
                         {
-                            Queue<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as Queue<byte[]>;
-                            while (sendCmdQueue != null && sendCmdQueue.Count > 0)
+                            //TODO：sendCmdQueue应该只读取但不移除，只有当命令发送成功即数据库的IsSet字段为0时才移除
+                            List<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
+                            if (sendCmdQueue != null)
                             {
-                                //TODO：sendCmdQueue应该只读取但不移除，只有当命令发送成功即数据库的IsSet字段为0时才移除
-                                dataItem.sendDataQueue.Enqueue(sendCmdQueue.Dequeue()); //复制数据
+                                for (int i = 0; i < sendCmdQueue.Count; i++)
+                                {
+                                    if (sendCmdQueue[i] != null)
+                                        dataItem.sendDataQueue.Enqueue(sendCmdQueue[i]); //复制数据
+                                }
                             }
                         }
                     } //end of foreach
 
                     if (deleteAddress != null && htClient.ContainsKey(deleteAddress))
                     {
-                        htClient.Remove(deleteAddress);
+                        lock (htClient)
+                        {
+                            htClient.Remove(deleteAddress);
+                        }
                         Log.Debug(deleteAddress + "是无效项，从哈希表中删除");
                     }
 
@@ -450,7 +465,7 @@ namespace WizepipesSocketServer
                     //上传完成，准备分析
                     if ((AnalyzeList.Count >= htClient.Count - offlineClientNum - maxBadClient) && (AnalyzeList.Count > maxBadClient) && adUploadingAndOnlineClinetNum == 0) //没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                     {
-                        AnalyzeData(); //分析AD数据并保存结果到数据库
+                        AnalyzeData(AnalyzeList); //分析AD数据并保存结果到数据库
 
                         if (IsAutoTest == true)
                         {
@@ -487,19 +502,36 @@ namespace WizepipesSocketServer
 
                         if (cfgList != null)
                         {
-                            Queue<byte[]> DbCmdQueue = new Queue<byte[]>();
+                            List<byte[]> DbCmdLsit = new List<byte[]>();
+
+                            if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
+                            {
+                                DbCmdLsit = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
+                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
+                                Console.WriteLine(msg);
+                                Log.Debug(msg);
+                            }
 
                             //Convert.ToInt32(null) == 0;
-                            if (cfgList[0] == 1)//设置采样时刻
+                            if (cfgList[0] == 1) //设置采样时刻--0x25
                             {
                                 byte[] cmdCapTime = cmdItem.CmdSetCapTime;
-                                cmdCapTime[9] = (byte)(Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeHour")));
-                                cmdCapTime[10] = (byte)(Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeMinute")));
+                                cmdCapTime[9] =
+                                    (byte)(Convert.ToInt32(
+                                        NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeHour")));
+                                cmdCapTime[10] =
+                                    (byte)(Convert.ToInt32(
+                                        NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeMinute")));
 
-                                Console.WriteLine("向设备号" + dataItem.intDeviceID+"--加入的命令是:"+ byteToHexStr(cmdCapTime));
-                                DbCmdQueue.Enqueue(cmdCapTime);
+                                Console.WriteLine(
+                                    "向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdCapTime));
+                                //if not include, add it
+                                if (!DbCmdLsit.Contains(cmdCapTime))
+                                    DbCmdLsit.Add(cmdCapTime);
                             }
-                            if (cfgList[1] == 1)//设置开启和关闭时长
+                            else DbCmdLsit[0] = null;
+
+                            if (cfgList[1] == 1)//设置开启和关闭时长--0x26
                             {
                                 int OpenTime = 2 * (Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "OpenTime")));
                                 int CloseTime = 2 * (Convert.ToInt32(NetDb.readsensorcfgItem(dataItem.intDeviceID, "CloseTime")));
@@ -510,51 +542,44 @@ namespace WizepipesSocketServer
                                 cmdSetOpenAndCloseTime[12] = (byte)(CloseTime & 0xFF);
 
                                 Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdSetOpenAndCloseTime));
-                                DbCmdQueue.Enqueue(cmdSetOpenAndCloseTime);
+
+                                if (!DbCmdLsit.Contains(cmdSetOpenAndCloseTime))
+                                    DbCmdLsit.Add(cmdSetOpenAndCloseTime);
                             }
-                            if (cfgList[2] == 1)//是否立即采样
+                            else DbCmdLsit[1] = null;
+
+                            if (cfgList[2] == 1)//是否立即采样--0x25
                             {
                                 dataItem.status.IsCaptureNow = true;
                                 dataItem.status.adStage = AdStage.Idle;
-                                DbCmdQueue.Enqueue(SetCapTime(dataItem.intDeviceID));
+                                if (DbCmdLsit[2][2] != 0x25)
+                                    DbCmdLsit.Add(SetCapTime(dataItem.intDeviceID));
                             }
-                            if (cfgList[3] == 1)//是否读取Gps经纬度信息
+                            else DbCmdLsit[2] = null;
+
+                            if (cfgList[3] == 1)//是否读取Gps经纬度信息--0x27
                             {
-                                DbCmdQueue.Enqueue(cmdItem.CmdReadGPSData);
+                                if (!DbCmdLsit.Contains(cmdItem.CmdReadGPSData))
+                                    DbCmdLsit.Add(cmdItem.CmdReadGPSData);
                             }
-                            if (cfgList[4] == 1)//是否设置AP名称
-                            {
-                                byte[] Cmd = cmdItem.CmdSetAPssid;
-                                byte[] SetAPName = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApName"));//转换成字符型
-                                for (int i = 0, j = 9; i < SetAPName.Length; i++)
-                                {
-                                    Cmd[j++] = SetAPName[i];
-                                }
-                                DbCmdQueue.Enqueue(Cmd);
-                            }
-                            if (cfgList[5] == 1)//是否设置AP密码
-                            {
-                                byte[] Cmd = cmdItem.CmdSetAPpassword;
-                                byte[] SetAPpassword = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApPassword"));
-                                for (int i = 0, j = 9; i < SetAPpassword.Length; i++)
-                                {
-                                    Cmd[j++] = SetAPpassword[i];
-                                }
-                                DbCmdQueue.Enqueue(Cmd);
-                            }
-                            if (cfgList[6] == 1)//是否设置Server的IP
+                            else DbCmdLsit[3] = null;
+
+                            if (cfgList[6] == 1)//是否设置Server的IP--0x29
                             {
                                 byte[] Cmd = cmdItem.CmdSetServerIP;
                                 string ipAddress = NetDb.readsensorcfgItem(dataItem.intDeviceID, "ServerIP");
                                 string[] sArray = ipAddress.Split(new char[] { '.' });
-                                
+
                                 Cmd[9] = Convert.ToByte(sArray[0]);
                                 Cmd[10] = Convert.ToByte(sArray[1]);
                                 Cmd[11] = Convert.ToByte(sArray[2]);
                                 Cmd[12] = Convert.ToByte(sArray[3]);
-                                DbCmdQueue.Enqueue(Cmd);
+                                if (!DbCmdLsit.Contains(Cmd))
+                                    DbCmdLsit.Add(Cmd);
                             }
-                            if (cfgList[7] == 1)//是否设置Server的Port
+                            else DbCmdLsit[4] = null;
+
+                            if (cfgList[7] == 1)//是否设置Server的Port--0x30
                             {
                                 byte[] Cmd = cmdItem.CmdSetServerPort;
                                 byte[] bytePort = new byte[2];
@@ -563,33 +588,69 @@ namespace WizepipesSocketServer
                                 bytePort = intToBytes(port);
                                 Cmd[9] = bytePort[0];
                                 Cmd[10] = bytePort[1];
-                                DbCmdQueue.Enqueue(Cmd);
+                                if (!DbCmdLsit.Contains(Cmd))
+                                    DbCmdLsit.Add(Cmd);
                             }
-                            if (cfgList[8] == 1) //设备重连
+                            else DbCmdLsit[5] = null;
+
+                            if (cfgList[4] == 1)//是否设置AP名称--0x31
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPssid;
+                                byte[] SetAPName = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApName"));//转换成字符型
+                                for (int i = 0, j = 9; i < SetAPName.Length; i++)
+                                {
+                                    Cmd[j++] = SetAPName[i];
+                                }
+                                if (!DbCmdLsit.Contains(Cmd))
+                                    DbCmdLsit.Add(Cmd);
+                            }
+                            else DbCmdLsit[6] = null;
+
+                            if (cfgList[5] == 1)//是否设置AP密码--0x32
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPpassword;
+                                byte[] SetAPpassword = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApPassword"));
+                                for (int i = 0, j = 9; i < SetAPpassword.Length; i++)
+                                {
+                                    Cmd[j++] = SetAPpassword[i];
+                                }
+                                if (!DbCmdLsit.Contains(Cmd))
+                                    DbCmdLsit.Add(Cmd);
+                            }
+                            else DbCmdLsit[7] = null;
+
+                            if (cfgList[8] == 1) //设备重连--0x33
                             {
                                 byte[] CmdReconnectTcp = cmdItem.CmdReconnectTcp;
-                                DbCmdQueue.Enqueue(CmdReconnectTcp);
+                                if (!DbCmdLsit.Contains(CmdReconnectTcp))
+                                    DbCmdLsit.Add(CmdReconnectTcp);
                             }
+                            else DbCmdLsit[8] = null;
 
                             //把从数据库读取的命令添加到队列中
-                            if (!htSendCmd.ContainsKey(dataItem.intDeviceID) && DbCmdQueue.Count>0) //不存在ID则添加
+                            if (!htSendCmd.ContainsKey(dataItem.intDeviceID) && DbCmdLsit.Count > 0) //不存在ID则添加
                             {
-                                htSendCmd.Add(dataItem.intDeviceID, DbCmdQueue);
-                                string msg = DateTime.Now+"设备号:" + dataItem.intDeviceID + "不存在ID则添加,htSendCmd添加命令队列成功";
+                                htSendCmd.Add(dataItem.intDeviceID, DbCmdLsit);
+                                string msg = DateTime.Now + "设备号:" + dataItem.intDeviceID + "不存在ID则添加,htSendCmd添加命令队列成功";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
                             //TODO:应该在前面if (cfgList != null)判断ID是否存在，若存在则判断contains，不能重复添加相同的指令，尤其是立即采样指令
-                            else if (DbCmdQueue.Count > 0) //存在则更新
-                            {
-                                htSendCmd[dataItem.intDeviceID] = DbCmdQueue;
-                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新,htSendCmd添加命令队列成功";
-                                Console.WriteLine(msg);
-                                Log.Debug(msg);
-                            }
+
                         }
 
                     } //end of foreach
+
+                    //TODO:读取数据库的立即采样设备对
+                    htMultiUserList = NetDb.GetDevicePair();
+                    int[,] checkResult = new int[htMultiUserList.Count, 2];//userID-0/1
+                    checkResult = checkDevicePair(htMultiUserList);//得到对比结果<userID, 0/1>
+                    for (int i = 0; i < checkResult.GetLength(0); i++)
+                    {
+                        NetDb.UpdateMultiUser("IsFinished", checkResult[i, 0], checkResult[i, 1]);
+                    }
+                    //TODO:把结果写入数据库
+
                 }
                 catch (Exception ex)
                 {
@@ -602,14 +663,14 @@ namespace WizepipesSocketServer
         }
 
         //分析AnalyzeList中的数据
-        private void AnalyzeData()
+        private void AnalyzeData(List<int> analyzeList)
         {
             List<string> resultList = new List<string>(); //计算结果列表
             //对所有上传完成的设备进行基点分析，把结果写入数据库
             for (int i = 0; i < AnalyzeList.Count - 1; i++) //at least 2 device
             {
                 int idA = AnalyzeList[i];
-                for (int j = i + 1; j < AnalyzeList.Count; j++)
+                for (int j = i + 1; j < analyzeList.Count; j++)
                 {
                     int idB = AnalyzeList[j];
                     //TODO:具体的业务操作
@@ -622,7 +683,7 @@ namespace WizepipesSocketServer
                         if (pipeInfoList[3] != 0)//读出了管子长度
                         {
                             resultList = Net_Analyze.AutoAnalyze(idA, idB);
-                          
+
                             if (idA == pipeInfoList[0] && idB == pipeInfoList[1])
                             {
                                 distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
@@ -631,7 +692,7 @@ namespace WizepipesSocketServer
                             {
                                 distance = (CalculateOffset(-Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
                             }
-                            
+
                         }
                         else distance = "fail";
 
@@ -641,13 +702,53 @@ namespace WizepipesSocketServer
                         Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                         Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                         Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
-                        Console.WriteLine("管道信息为：" + "管子ID："+ pipeInfoList[1] + "SensorName："+sensorName + "距离是："+distance);
+                        Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[1] + "SensorName：" + sensorName + "距离是：" + distance);
+
+                        if (Convert.ToInt32(distance) > 0 && Convert.ToInt32(distance) < pipeInfoList[3])
+                        {
+                            NetDb.UpdateLeakTimes(pipeInfoList[1]);
+                        }
                     }
 
                 }
             }
             AnalyzeList.Clear();
             Console.WriteLine("分析完成,清空list");
+        }
+
+        public void AnalyzeCaptureNowData(int idA, int idB)
+        {
+            List<string> resultList = new List<string>(); //计算结果列表
+            List<int> pipeInfoList = NetDb.GetpipeInfo(idA, idB);
+            if (pipeInfoList != null && pipeInfoList[0] != 0 && pipeInfoList[1] != 0 && pipeInfoList[2] != 0)
+            {
+                string distance = "";
+                string sensorName = "";
+                sensorName = NetDb.GetSensorName(idA);
+                if (pipeInfoList[3] != 0)//读出了管子长度
+                {
+                    resultList = Net_Analyze.AutoAnalyze(idA, idB);
+
+                    if (idA == pipeInfoList[0] && idB == pipeInfoList[1])
+                    {
+                        distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
+                    }
+                    else
+                    {
+                        distance = (CalculateOffset(-Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
+                    }
+
+                }
+                else distance = "fail";
+
+                Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[2],
+                    resultList[1], resultList[2], resultList[3], sensorName, distance);
+                Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
+                Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
+                Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
+                Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
+                Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[1] + "SensorName：" + sensorName + "距离是：" + distance);
+            }
         }
 
         //检查哈希表中是否已存在当前ID
@@ -659,6 +760,50 @@ namespace WizepipesSocketServer
                     return dataItem.strAddress;
             }
             return null;
+        }
+
+        public int[,] checkDevicePair(List<int[]> devicePair)
+        {
+            int[,] result = new int[devicePair.Count, 2];//二维数组
+            int[,] resultPair = new int[devicePair.Count, 2];
+            foreach (DataItem dataItem in htClient.Values)
+            {
+                for (int i = 0; i < resultPair.GetLength(0); i++)
+                {
+                    if (dataItem.intDeviceID == devicePair[i][1] && dataItem.status.adStage == AdStage.AdStored)
+                    {
+                        resultPair[i, 0] = 1;
+                    }
+                    else
+                    {
+                        resultPair[i, 0] = 0;
+                    }
+
+                    if (dataItem.intDeviceID == devicePair[i][2] && dataItem.status.adStage == AdStage.AdStored)
+                    {
+                        resultPair[i, 1] = 1;
+                    }
+                    else
+                    {
+                        resultPair[i, 1] = 0;
+                    }
+
+                }
+            }//end of foreach
+
+            for (int i = 0; i < result.GetLength(0); i++)
+            {
+                result[i, 0] = devicePair[i][0];
+                if (resultPair[i, 0] == 1 && resultPair[i, 1] == 1)
+                {
+                    result[i, 1] = 1;
+                    AsyncAnalyzeCaptureNowData method = new AsyncAnalyzeCaptureNowData(AnalyzeCaptureNowData);
+                    method.BeginInvoke(devicePair[i][1], devicePair[i][2], null, null);
+                }
+                else result[i, 1] = 0;
+            }
+
+            return result;
         }
 
         /*
@@ -673,7 +818,7 @@ namespace WizepipesSocketServer
         {
             double x = (0.5 * (l - n * v / f));
             //保留3位小数
-            x = (int) (x * 1000);
+            x = (int)(x * 1000);
             x = x / 1000;
 
             return x;
@@ -826,14 +971,6 @@ namespace WizepipesSocketServer
             return msg;
         }
 
-        //测试画图的稳定性
-        public void TestZed()
-        {
-            AnalyzeList.Add(3);
-            AnalyzeList.Add(4);
-            AnalyzeList.Add(5);
-            AnalyzeData();
-        }
     }
 
 }
