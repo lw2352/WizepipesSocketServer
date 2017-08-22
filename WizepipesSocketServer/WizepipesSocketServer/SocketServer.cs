@@ -12,9 +12,6 @@ using ZedGraph;
 //[assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
 //TODO:1.自动测试的方法要改规范
-//2.协商计划任务的多时刻采样做到msp430里面，每次采样完成后都把时间跳到下一个，0x02表示立即采样命令而不是定时采样命令
-//3.在线和离线设备要区分开来
-//4.要自己用的习惯
 
 namespace WizepipesSocketServer
 {
@@ -398,6 +395,8 @@ namespace WizepipesSocketServer
                         {
                             deleteAddress = dataItem.strAddress;
                         }
+
+                        //TODO:对采样完成和上传的判断按照区域来，每个区域的状态要有判断
                         //对立即采样的设备单独处理
                         if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
                         {
@@ -785,11 +784,11 @@ namespace WizepipesSocketServer
         {
             int[,] result = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1];//二维数组 <userID--0/1>
             int[,] resultPair = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1];//<0/1, 0/1>
-            foreach (DataItem dataItem in htClient.Values)
+            foreach (DataItem dataItem in htClient.Values)//总表
             {
-                for (int i = 0; i < resultPair.GetLength(0); i++)
+                for (int i = 0; i < resultPair.GetLength(0); i++)//行
                 {
-                    for (int j = 0; j < devicePair.GetLength(1); j++)
+                    for (int j = 0; j < devicePair.GetLength(1); j++)//列
                     {
                         if (dataItem.intDeviceID == devicePair[i, 1] && dataItem.status.adStage == AdStage.AdStored)
                         {

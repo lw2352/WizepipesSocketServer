@@ -128,15 +128,50 @@ namespace WizepipesSocketServer
                 Console.WriteLine("ok");
             }*/
 
-            int[,] a = new int[3, 4] {
+            /*int[,] a = new int[3, 4] {
                 {0, 1, 2, 3} ,   /*  初始化索引号为 0 的行 */
-                {4, 5, 6, 7} ,   /*  初始化索引号为 1 的行 */
-                {8, 9, 10, 11}   /*  初始化索引号为 2 的行 */
-            };
+            //{4, 5, 6, 7} ,   /*  初始化索引号为 1 的行 */
+            //{8, 9, 10, 11}   /*  初始化索引号为 2 的行 */
+            // };
 
-            int i=a.GetLength(0);//行数
-            int j = a.GetLength(1);//列数
-            
+            //int i=a.GetLength(0);//行数
+            //int j = a.GetLength(1);//列数
+
+            byte[] CmdSetCapTime = new byte[] { 0xA5, 0xA5, 0x25, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x30,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0xFF, 0x5A, 0x5A };
+
+            string strHour = "18,9,10,22";
+            string strMinute = "15,16,52,45";
+            //最多24组
+            string[] HourArray = strHour.Split(new char[] { ',' });
+            string[] MinuteArray = strMinute.Split(new char[] { ',' });
+
+            List<int> timesList = new List<int>(24);
+
+            for (int i = 0; i < 4; i++)
+            {
+                timesList.Add(Convert.ToInt32(HourArray[i]) * 60 + Convert.ToInt32(MinuteArray[i]));
+            }
+
+            timesList.Sort();//TODO:默认从小到大排序,排序完了之后分解并存放在数组中
+            int hour = timesList[0] / 60;
+            int minute = timesList[0]-60*hour;
+
+            for (int i = 0, j = 9; i < 24; i++)
+            {
+                if (i < HourArray.GetLength(0))
+                {
+                    CmdSetCapTime[j++] = Convert.ToByte(HourArray[i]);
+                    CmdSetCapTime[j++] = Convert.ToByte(MinuteArray[i]);
+                }
+            }
+
         }
 
 
