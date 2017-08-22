@@ -116,7 +116,7 @@ namespace WizepipesSocketServer
             //server.CalculateOffset(7, 5, 1000, 5000);
             //List<int> testList = NetDb.GetpipeInfo(3,4);
             //string name = NetDb.GetSensorName(3);
-            byte[] CmdReadCurrentOpenAndCloseTime = new byte[] { 0xA5, 0xA5, 0x21, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x5A, 0x5A };
+            /*byte[] CmdReadCurrentOpenAndCloseTime = new byte[] { 0xA5, 0xA5, 0x21, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x5A, 0x5A };
             List<byte[]> AnalyzeList = new List<byte[]>();
             AnalyzeList.Add(CmdReadCurrentOpenAndCloseTime);
             byte test = AnalyzeList[0][0];
@@ -126,7 +126,17 @@ namespace WizepipesSocketServer
             if (htTest.Contains(CmdReadCurrentOpenAndCloseTime))
             {
                 Console.WriteLine("ok");
-            }
+            }*/
+
+            int[,] a = new int[3, 4] {
+                {0, 1, 2, 3} ,   /*  初始化索引号为 0 的行 */
+                {4, 5, 6, 7} ,   /*  初始化索引号为 1 的行 */
+                {8, 9, 10, 11}   /*  初始化索引号为 2 的行 */
+            };
+
+            int i=a.GetLength(0);//行数
+            int j = a.GetLength(1);//列数
+            
         }
 
 

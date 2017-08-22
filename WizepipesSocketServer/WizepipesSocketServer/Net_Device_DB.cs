@@ -744,27 +744,34 @@ namespace WizepipesSocketServer
             }
         }
 
-        public static string GetSensorName(int sensorID)
+        public static string[] GetSensorNameAndID(int intDeviceID)
         {
-            string resultItem = null;
+            string[] resultItem = new string[2];
             MySQLDB.InitDb();
             string sensorName = null;
+            string sensorID = null;
             try
             {
-                DataSet ds1 = new DataSet("tsensorcfg");
+                DataSet ds1 = new DataSet("tsensor");
                 string strSQL1 =
-                    "SELECT SensorName FROM tsensor where SensorID=" + sensorID;
+                    "SELECT SensorID, SensorName FROM tsensor where IntdeviceID=" + intDeviceID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
                     // 有数据集
                     if (ds1.Tables[0].Rows.Count > 0)
                     {
+                        sensorID = (ds1.Tables[0].Rows[0]["SensorID"]).ToString();
                         sensorName = (ds1.Tables[0].Rows[0]["SensorName"]).ToString();
                     }
                 }
-                if (sensorName != "")
-                    return sensorName;
+                if (sensorID != "" && sensorName != "")
+                {
+                    resultItem[0] = sensorID;
+                    resultItem[1] = sensorName;
+                    return resultItem;
+                }
+                
                 else return null;
             }
             catch (Exception ex)
@@ -774,32 +781,34 @@ namespace WizepipesSocketServer
 
         }
 
+
+
         #endregion
 
-        public static List<int[]> GetDevicePair()
+        public static int[,] GetDevicePair()
         {
             string resultItem = null;
             MySQLDB.InitDb();
 
             try
             {
-                DataSet ds1 = new DataSet("tmultiusercapturenow");
+                DataSet ds1 = new DataSet("tmultiuser");
                 string strSQL1 =
-                    "SELECT * FROM tmultiusercapturenow";
+                    "SELECT * FROM tmultiuser";
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
                     int i = 0;
                     int count = ds1.Tables[0].Rows.Count;
-                    List<int[]> result = new List<int[]>(count);
+                    int[,] result = new int[count,3];
                     while (i < count)
                     {
-                        string item = (ds1.Tables[0].Rows[i]["IsFinished"]).ToString();
+                        string item = (ds1.Tables[0].Rows[i]["IsCapture"]).ToString();
                         if (item != "" && Convert.ToInt32(item) == 1)
                         {
-                            result[i][0] = (int)(ds1.Tables[0].Rows[i]["userID"]);
-                            result[i][1] = (int)(ds1.Tables[0].Rows[i]["SensorAID"]);
-                            result[i][2] = (int)(ds1.Tables[0].Rows[i]["SensorBID"]);
+                            result[i,0] = (int)(ds1.Tables[0].Rows[i]["userID"]);
+                            result[i,1] = (int)(ds1.Tables[0].Rows[i]["SensorAID"]);
+                            result[i,2] = (int)(ds1.Tables[0].Rows[i]["SensorBID"]);
                         }
                         i++;
                     }//end  of while
@@ -823,7 +832,7 @@ namespace WizepipesSocketServer
             string strSQL = "";
             bool IsDelSuccess = false;
             strSQL =
-                "Update tmultiusercapturenow SET " + updateItem + " =?sensorupdateItem WHERE userID=?userid";
+                "Update tmultiuser SET " + updateItem + " =?sensorupdateItem WHERE userID=?userid";
             parmss = new MySqlParameter[]
             {
                 new MySqlParameter("?userid", MySqlDbType.Int32),
@@ -856,12 +865,14 @@ namespace WizepipesSocketServer
         {
             MySQLDB.InitDb();
             int times = -1;
+            MySqlParameter[] parmss = null;
+            bool IsDelSuccess = false;
             //从数据库中查找当前ID是否存在
             try
             {
-                DataSet ds1 = new DataSet("tsensorcfg");
+                DataSet ds1 = new DataSet("tpipeleakreport");
                 string strSQL1 =
-                    "SELECT LeakTimes FROM tsensorcfg where pipeID=" + pipeID;
+                    "SELECT LeakTimes FROM tpipeleakreport where pipeID=" + pipeID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
@@ -872,25 +883,70 @@ namespace WizepipesSocketServer
                     }
                 }
 
-                //不存在当前管道ID，更新添加为1
-                if (times == -1)
+                if (times == -1) //没有对应的pipeID，需要插入
                 {
-                    DataSet ds2 = new DataSet("tsensorcfg");
-                    string strSQL2 = "insert";
-                        
-                    ds2 = MySQLDB.SelectDataSet(strSQL2, null);
-                    if (ds2 != null)
+                    MySqlParameter[] parmssInsert = null;
+                    string strSQL = "";
+                    bool IsDelSuccessInsert = false;
+                    strSQL = " insert into tpipeleakreport (PipeID,LeakTimes) values" +
+                             "(?pipeID,?leakTimes);";
+
+                    parmssInsert = new MySqlParameter[]
                     {
-                        // 有数据集
-                        if (ds2.Tables[0].Rows.Count > 0)
+                        new MySqlParameter("?pipeID", MySqlDbType.Int32),
+                        new MySqlParameter("?leakTimes", MySqlDbType.Int32)
+                    };
+                    parmssInsert[0].Value = pipeID;
+                    parmssInsert[1].Value = 1;
+
+                    try
+                    {
+                        IsDelSuccessInsert = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                        if (IsDelSuccessInsert != false)
                         {
-                            times = (int)(ds2.Tables[0].Rows[0]["LeakTimes"]);
+                            return "ok";
+                        }
+                        else
+                        {
+                            return "fail";
                         }
                     }
+
+                    catch (Exception ex)
+                    {
+                        return "fail"; //数据库异常
+                    }
                 }
-                else //累计加1
+                else
                 {
-                    //update
+
+                    string strSQL2 =
+                        "UPDATE tpipeleakreport SET LeakTimes=?leakTimes FROM tpipeleakreport where pipeID=" + pipeID;
+                    parmss = new MySqlParameter[]
+                    {
+                        new MySqlParameter("?leakTimes", MySqlDbType.Int32),
+                    };
+                    parmss[0].Value = times + 1;
+
+                    try
+                    {
+                        IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL2, parmss);
+
+                        if (IsDelSuccess != false)
+                        {
+                            return "ok";
+                        }
+                        else
+                        {
+                            return "fail";
+                        }
+                    }
+
+                    catch (Exception ex)
+                    {
+                        return "fail";
+                    }
                 }
 
             }
@@ -900,6 +956,88 @@ namespace WizepipesSocketServer
             }
         }
 
+        public static string getSensorIsPipeStart(string PipeID, string SensorID)
+        {
+            MySQLDB.InitDb();
+            try
+            {
+                DataSet ds = new DataSet("tsensorid");
+                string strSQL = "SELECT * FROM tsensor WHERE PipeID = ?PipeID and SensorID = ?SensorID";
+
+                MySqlParameter[] parms = null;
+
+
+                parms = new MySqlParameter[]
+                {
+                    new MySqlParameter("?PipeID", MySqlDbType.Int32),
+                    new MySqlParameter("?SensorID", MySqlDbType.Int32)
+                };
+
+                parms[0].Value = Convert.ToInt32(PipeID);
+                parms[0].Value = Convert.ToInt32(SensorID);
+
+                ds = MySQLDB.SelectDataSet(strSQL, parms);
+                if (ds != null)
+                {
+                    if (ds.Tables[0].Rows.Count > 0)
+                        // 有数据集
+                    {
+                        //SencondHead为1是尾部，0为头部
+                        string IsHead = (ds.Tables[0].Rows[0]["SencondHead"]).ToString();
+                        return IsHead;
+                    }
+                    else
+                    {
+                        //头部
+                        return "0";
+                    };
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+        }
+
+        public static string UpdateLeakPointScale(int pipeID, double scale)
+        {
+            MySQLDB.InitDb();
+            MySqlParameter[] parmss = null;
+            bool IsDelSuccess = false;
+
+            string strSQL2 =
+                "UPDATE tpipe SET LeakPointScale=?scale FROM tpipeleakreport where pipeID=" + pipeID;
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?scale", MySqlDbType.VarChar),
+            };
+            parmss[0].Value = scale.ToString();
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL2, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
 
 
 

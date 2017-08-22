@@ -7,6 +7,8 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using ZedGraph;
+
 //[assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
 //TODO:1.自动测试的方法要改规范
@@ -23,8 +25,9 @@ namespace WizepipesSocketServer
         public static Hashtable htClient = new Hashtable(); //strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable(); //intID--QueueCmd
-        public static List<int[]> htMultiUserList;//多用户立即采样,int[] [userID，aID,bID]//TODO:用二维数组，没必要用List
+        public static int[,] htMultiUserList;//多用户立即采样,int[] [userID，aID,bID]//TODO:用二维数组，没必要用List
         //TODO:对于区域来说，和多用户立即采样一样，判断时使用for循环
+
         public static CmdItem cmdItem = new CmdItem(); //实例化
         public List<int> AnalyzeList = new List<int>(); //待分析ID的可变长数组
 
@@ -554,7 +557,7 @@ namespace WizepipesSocketServer
                                 dataItem.status.IsCaptureNow = true;
                                 dataItem.status.adStage = AdStage.Idle;
                                 if (DbCmdLsit[2][2] != 0x25)
-                                    DbCmdLsit.Add(SetCapTime(dataItem.intDeviceID));
+                                    DbCmdLsit.Add(SetCapTime(dataItem.intDeviceID));//设置立即采样
                             }
                             else DbCmdLsit[2] = null;
 
@@ -643,14 +646,16 @@ namespace WizepipesSocketServer
                     } //end of foreach
 
                     //TODO:读取数据库的立即采样设备对
-                    htMultiUserList = NetDb.GetDevicePair();
-                    int[,] checkResult = new int[htMultiUserList.Count, 2];//userID-0/1
+                    htMultiUserList = NetDb.GetDevicePair();//"userID"]);"SensorAID"]);"SensorBID"
+
+                    int[,] checkResult = new int[htMultiUserList.GetLength(0), htMultiUserList.GetLength(1)-1];//userID-0/1
                     checkResult = checkDevicePair(htMultiUserList);//得到对比结果<userID, 0/1>
                     for (int i = 0; i < checkResult.GetLength(0); i++)
                     {
-                        NetDb.UpdateMultiUser("IsFinished", checkResult[i, 0], checkResult[i, 1]);
+                        //把结果写入数据库
+                        NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], checkResult[i, 1]);
                     }
-                    //TODO:把结果写入数据库
+                    
 
                 }
                 catch (Exception ex)
@@ -675,39 +680,40 @@ namespace WizepipesSocketServer
                 {
                     int idB = AnalyzeList[j];
                     //TODO:具体的业务操作
-                    List<int> pipeInfoList = NetDb.GetpipeInfo(idA, idB);
+                    List<int> pipeInfoList = NetDb.GetpipeInfo(idA, idB);//包括：sensorAID);sensorBID);pipeID);pipeLength);
                     if (pipeInfoList != null && pipeInfoList[0] != 0 && pipeInfoList[1] != 0 && pipeInfoList[2] != 0)
                     {
                         string distance = "";
-                        string sensorName = "";
-                        sensorName = NetDb.GetSensorName(idA);
+                        string[] sensorName = new string[2];
+                        sensorName = NetDb.GetSensorNameAndID(idA);//TODO:读取idA设备对应的地图SensorID和Name
                         if (pipeInfoList[3] != 0)//读出了管子长度
                         {
                             resultList = Net_Analyze.AutoAnalyze(idA, idB);
-
-                            if (idA == pipeInfoList[0] && idB == pipeInfoList[1])
-                            {
-                                distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
-                            }
-                            else
-                            {
-                                distance = (CalculateOffset(-Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
-                            }
-
+                           
+                            distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();                                
                         }
                         else distance = "fail";
 
                         Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[2],
-                            resultList[1], resultList[2], resultList[3], sensorName, distance);
+                            resultList[1], resultList[2], resultList[3], sensorName[1], distance);
                         Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                         Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                         Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                         Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
-                        Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[1] + "SensorName：" + sensorName + "距离是：" + distance);
+                        Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[2] + "SensorName：" + sensorName + "距离是：" + distance);
 
                         if (Convert.ToInt32(distance) > 0 && Convert.ToInt32(distance) < pipeInfoList[3])
                         {
-                            NetDb.UpdateLeakTimes(pipeInfoList[1]);
+                            NetDb.UpdateLeakTimes(pipeInfoList[2]);//更新管道漏水次数
+
+                            double scale = 0;
+                            if (NetDb.getSensorIsPipeStart(pipeInfoList[2].ToString(), sensorName[0]) == "1")//标记漏点在管子上的比例位置：1-尾部，0-头部
+                            {
+                                scale = Convert.ToDouble(distance) / pipeInfoList[3];
+                            }
+                            else scale = 1- (Convert.ToDouble(distance) / pipeInfoList[3]);
+
+                            NetDb.UpdateLeakPointScale(pipeInfoList[2], scale);
                         }
                     }
 
@@ -717,38 +723,50 @@ namespace WizepipesSocketServer
             Console.WriteLine("分析完成,清空list");
         }
 
+        /// <summary>
+        /// 分析两个设备的立即采样数据
+        /// </summary>
+        /// <param name="idA"></param>
+        /// <param name="idB"></param>
         public void AnalyzeCaptureNowData(int idA, int idB)
         {
             List<string> resultList = new List<string>(); //计算结果列表
-            List<int> pipeInfoList = NetDb.GetpipeInfo(idA, idB);
+            //TODO:具体的业务操作
+            List<int> pipeInfoList = NetDb.GetpipeInfo(idA, idB);//包括：sensorAID);sensorBID);pipeID);pipeLength);
             if (pipeInfoList != null && pipeInfoList[0] != 0 && pipeInfoList[1] != 0 && pipeInfoList[2] != 0)
             {
                 string distance = "";
-                string sensorName = "";
-                sensorName = NetDb.GetSensorName(idA);
+                string[] sensorName = new string[2];
+                sensorName = NetDb.GetSensorNameAndID(idA);//TODO:读取idA设备对应的地图SensorID和Name
                 if (pipeInfoList[3] != 0)//读出了管子长度
                 {
                     resultList = Net_Analyze.AutoAnalyze(idA, idB);
 
-                    if (idA == pipeInfoList[0] && idB == pipeInfoList[1])
-                    {
-                        distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
-                    }
-                    else
-                    {
-                        distance = (CalculateOffset(-Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
-                    }
-
+                    distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
                 }
                 else distance = "fail";
 
                 Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[2],
-                    resultList[1], resultList[2], resultList[3], sensorName, distance);
+                    resultList[1], resultList[2], resultList[3], sensorName[1], distance);
                 Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                 Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                 Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                 Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
-                Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[1] + "SensorName：" + sensorName + "距离是：" + distance);
+                Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[2] + "SensorName：" + sensorName + "距离是：" + distance);
+
+                if (Convert.ToInt32(distance) > 0 && Convert.ToInt32(distance) < pipeInfoList[3])
+                {
+                    NetDb.UpdateLeakTimes(pipeInfoList[2]);//更新管道漏水次数
+
+                    double scale = 0;
+                    if (NetDb.getSensorIsPipeStart(pipeInfoList[2].ToString(), sensorName[0]) == "1")//标记漏点在管子上的比例位置：1-尾部，0-头部
+                    {
+                        scale = Convert.ToDouble(distance) / pipeInfoList[3];
+                    }
+                    else scale = 1 - (Convert.ToDouble(distance) / pipeInfoList[3]);
+
+                    NetDb.UpdateLeakPointScale(pipeInfoList[2], scale);
+                }
             }
         }
 
@@ -763,43 +781,46 @@ namespace WizepipesSocketServer
             return null;
         }
 
-        public int[,] checkDevicePair(List<int[]> devicePair)
+        public int[,] checkDevicePair(int[,] devicePair)
         {
-            int[,] result = new int[devicePair.Count, 2];//二维数组
-            int[,] resultPair = new int[devicePair.Count, 2];
+            int[,] result = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1];//二维数组 <userID--0/1>
+            int[,] resultPair = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1];//<0/1, 0/1>
             foreach (DataItem dataItem in htClient.Values)
             {
                 for (int i = 0; i < resultPair.GetLength(0); i++)
                 {
-                    if (dataItem.intDeviceID == devicePair[i][1] && dataItem.status.adStage == AdStage.AdStored)
+                    for (int j = 0; j < devicePair.GetLength(1); j++)
                     {
-                        resultPair[i, 0] = 1;
-                    }
-                    else
-                    {
-                        resultPair[i, 0] = 0;
+                        if (dataItem.intDeviceID == devicePair[i, 1] && dataItem.status.adStage == AdStage.AdStored)
+                        {
+                            resultPair[i, j] = 1;
+                        }
+                        else
+                        {
+                            resultPair[i, j] = 0;
+                        }
                     }
 
-                    if (dataItem.intDeviceID == devicePair[i][2] && dataItem.status.adStage == AdStage.AdStored)
+                    /*if (dataItem.intDeviceID == devicePair[i,2] && dataItem.status.adStage == AdStage.AdStored)
                     {
                         resultPair[i, 1] = 1;
                     }
                     else
                     {
                         resultPair[i, 1] = 0;
-                    }
+                    }*/
 
                 }
             }//end of foreach
 
             for (int i = 0; i < result.GetLength(0); i++)
             {
-                result[i, 0] = devicePair[i][0];
+                result[i, 0] = devicePair[i,0];
                 if (resultPair[i, 0] == 1 && resultPair[i, 1] == 1)
                 {
                     result[i, 1] = 1;
                     AsyncAnalyzeCaptureNowData method = new AsyncAnalyzeCaptureNowData(AnalyzeCaptureNowData);
-                    method.BeginInvoke(devicePair[i][1], devicePair[i][2], null, null);
+                    method.BeginInvoke(devicePair[i,1], devicePair[i,2], null, null);
                 }
                 else result[i, 1] = 0;
             }
