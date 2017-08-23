@@ -667,25 +667,30 @@ namespace WizepipesSocketServer
 
                     //TODO:读取数据库的立即采样设备对
                     MultiUserList = NetDb.GetDevicePair();//"userID"]);"SensorAID"]);"SensorBID"
-
-                    int[,] checkResult = new int[MultiUserList.GetLength(0), MultiUserList.GetLength(1) - 1];//userID-0/1
-                    checkResult = checkDevicePair(MultiUserList);//得到对比结果<userID, 0/1>
-                    for (int i = 0; i < checkResult.GetLength(0); i++)
+                    if (MultiUserList != null)
                     {
-                        //把结果写入数据库
-                        NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], checkResult[i, 1]);
-                        //TODO;复位设备的立即采样属性
+                        int[,] checkResult = new int[MultiUserList.GetLength(0),
+                            MultiUserList.GetLength(1) - 1]; //userID-0/1
+                        checkResult = checkDevicePair(MultiUserList); //得到对比结果<userID, 0/1>
+                        for (int i = 0; i < checkResult.GetLength(0); i++)
+                        {
+                            //把结果写入数据库
+                            NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], checkResult[i, 1]);
+                            //TODO;复位设备的立即采样属性
+                        }
                     }
 
                     if (AreaDeviceList == null)
                     {
                         //TODO：初始化读取areaID里面的设备ID
+                        AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
                     }
                     if (AnalyzeAreaList == null)
                     {
                         //初始化
+                        AnalyzeAreaList = new List<List<int>>(AreaDeviceList.Count);//主要是初始化行数
                     }
-                    int[,] checkAreaResult = new int[AreaDeviceList.Count, 5];
+                    int[,] checkAreaResult = new int[AreaDeviceList.Count, 3];
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         for (int i = 0; i < AreaDeviceList.Count; i++)
@@ -740,6 +745,7 @@ namespace WizepipesSocketServer
                             if (IsAutoTest == true)
                             {
                                 //TODO:把所有设备的立即采样属性设成立即采样
+                                //根据两个传感器在同一个管道来设置
                             }
                         }
                     }

@@ -19,7 +19,7 @@ namespace WizepipesSocketServer
         {
             InitializeComponent();
             ReadCfg();
-            NetDb.readsensorcfg(1);
+            NetDb.readsensorcfg(3);
         }
 
         public void ReadCfg()

@@ -1039,6 +1039,77 @@ namespace WizepipesSocketServer
             }
         }
 
+        public static List<int[]> readAllDeviceIdByAreaID()
+        {
+            MySQLDB.InitDb();
+            int[] result;
+            List<int[]> returnList;
+            try
+            {
+                DataSet ds1 = new DataSet("tuser");
+                string strSQL1 =
+                    "SELECT distinct AreaID FROM tuser order by AreaID ASC";//返回不重复的目标字段
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    int i = 0;
+                    int count = ds1.Tables[0].Rows.Count;
+                    if (count > 0)
+                    {
+                        result = new int[count];
+                        returnList = new List<int[]>(count);
+                        while (i < count)
+                        {
+                            string item = (ds1.Tables[0].Rows[i]["AreaID"]).ToString();
+                            if (item != "")
+                            {
+                                result[i] = Convert.ToInt32(item);
+                            }
+                            i++;
+                        }
+                    }
+                    else return null;
+                }
+                else return null;
+
+                for (int i = 0; i < result.Length; i++)
+                {
+                    DataSet ds2 = new DataSet("tsensor");
+                    string strSQL2 =
+                        "SELECT distinct IntdeviceID FROM tsensor where AreaID = "+result[i]+" order by IntdeviceID ASC"; //返回不重复的目标字段
+                    ds2 = MySQLDB.SelectDataSet(strSQL2, null);
+                    if (ds2 != null)
+                    {
+                        int j = 0;
+                        int count = ds1.Tables[0].Rows.Count;
+                        if (count > 0)
+                        {
+                            int[] temp = new int[count];
+                            while (j < count)
+                            {
+                                string item = (ds2.Tables[0].Rows[j]["IntdeviceID"]).ToString();
+                                if (item != "")
+                                {
+                                    temp[j] = Convert.ToInt32(item);
+                                }
+                                j++;
+                            }
+                            returnList[i] = temp;
+                        }
+                        else returnList[i] = null;
+                    }//end of if  
+                    else returnList[i] = null;
+                }
+
+                return returnList;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+        }
+
 
 
     }
