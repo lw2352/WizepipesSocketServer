@@ -24,7 +24,8 @@ namespace WizepipesSocketServer
         public static Hashtable htSendCmd = new Hashtable(); //intID--QueueCmd
         public static int[,] MultiUserList;//多用户立即采样,int[] [userID，aID,bID]//TODO:用二维数组，没必要用List
         //TODO:对于区域来说，和多用户立即采样一样，判断时使用for循环
-        public static List<int[]> AreaDeviceList;//1个数组包含一个区域里面的所有设备ID，list不涉及具体areaID
+        public static List<int[]> AreaDeviceList;//1个数组包含一个区域areaID里面的所有设备ID
+        public static List<List<int>> AnalyzeAreaList;//存储已上传完成的设备ID
         public static CmdItem cmdItem = new CmdItem(); //实例化
         public List<int> AnalyzeList = new List<int>(); //待分析ID的可变长数组
 
@@ -396,6 +397,11 @@ namespace WizepipesSocketServer
                             deleteAddress = dataItem.strAddress;
                         }
 
+                        #region MyRegion
+
+                        
+
+                        
                         //TODO:对采样完成和上传的判断按照区域来，每个区域的状态要有判断
                         //对立即采样的设备单独处理
                         if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
@@ -421,17 +427,12 @@ namespace WizepipesSocketServer
                                 dataItem.status.adStage = AdStage.Idle;
                             }
                             if (dataItem.status.IsCaptureNow == true)
-                            {
-                                //TODO:如果要多用户操作，需要数据库加表，程序中建立<用户ID,立即采样类（设备idA--idB）>哈希表，然后异步beginInvoke进行数据的分析
-                                //TODO:计划任务的数据分析和立即采样的要分别对待
-                                //立即采样完成后，重新设置一次采样时刻
-                                NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsSetCapTime", 1);
+                            {                               
                                 dataItem.status.IsCaptureNow = false;
-                                //dataItem.status.adStage = AdStage.Idle;
-                                Log.Debug("立即采样完成后，重新设置一次采样时刻");
-
                             }
                         }
+                        #endregion
+
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //发送命令哈希表中是否包含当前dataItem的id
                         {
@@ -519,12 +520,32 @@ namespace WizepipesSocketServer
                             if (cfgList[0] == 1) //设置采样时刻--0x25
                             {
                                 byte[] cmdCapTime = cmdItem.CmdSetCapTime;
-                                cmdCapTime[9] =
-                                    (byte)(Convert.ToInt32(
-                                        NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeHour")));
-                                cmdCapTime[10] =
-                                    (byte)(Convert.ToInt32(
-                                        NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeMinute")));
+                                string strHour = NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeHour");
+                                string strMinute = NetDb.readsensorcfgItem(dataItem.intDeviceID, "CapTimeMinute");
+
+                                //最多24组
+                                string[] HourArray = strHour.Split(new char[] { ',' });
+                                string[] MinuteArray = strMinute.Split(new char[] { ',' });
+
+                                List<int> timesList = new List<int>(24);
+
+                                for (int i = 0; i < HourArray.GetLength(0); i++)
+                                {
+                                    timesList.Add(Convert.ToInt32(HourArray[i]) * 60 + Convert.ToInt32(MinuteArray[i]));
+                                }
+
+                                timesList.Sort();//默认从小到大排序,排序完了之后分解并存放在数组中
+
+                                for (int i = 0, j = 9; i < 24; i++)
+                                {
+                                    if (i < HourArray.GetLength(0))
+                                    {
+                                        int hour = timesList[i] / 60;
+                                        int minute = timesList[i] - 60 * hour;
+                                        cmdCapTime[j++] = Convert.ToByte(hour);
+                                        cmdCapTime[j++] = Convert.ToByte(minute);
+                                    }
+                                }
 
                                 Console.WriteLine(
                                     "向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdCapTime));
@@ -638,7 +659,7 @@ namespace WizepipesSocketServer
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
-                            //TODO:应该在前面if (cfgList != null)判断ID是否存在，若存在则判断contains，不能重复添加相同的指令，尤其是立即采样指令
+
 
                         }
 
@@ -653,17 +674,72 @@ namespace WizepipesSocketServer
                     {
                         //把结果写入数据库
                         NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], checkResult[i, 1]);
+                        //TODO;复位设备的立即采样属性
                     }
 
-                    //TODO：读取areaID里面的设备ID
+                    if (AreaDeviceList == null)
+                    {
+                        //TODO：初始化读取areaID里面的设备ID
+                    }
+                    if (AnalyzeAreaList == null)
+                    {
+                        //初始化
+                    }
+                    int[,] checkAreaResult = new int[AreaDeviceList.Count, 5];
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         for (int i = 0; i < AreaDeviceList.Count; i++)
                         {
                             if (AreaDeviceList[i].Contains(dataItem.intDeviceID))
                             {
-                                //TODO：对设备具体的状态属性判断，并记录下来;每个区域的采样完成和离线的总数目记录在一个数组中，最后存在一个list里面，结构与AreaDeviceList类似，当此区域达到上传的资格后，进行上传
+                                //TODO：对设备具体的状态属性判断，并记录下来;每个区域的采样完成和离线的总数目记录在一个二维数组中，当此区域达到上传的资格后，进行上传
+                                if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
+                                {
+                                    checkAreaResult[i, 0]++;//采样完成设备数
+                                }
+                                if (dataItem.status.clientStage == ClientStage.offLine && dataItem.status.IsCaptureNow == false)
+                                {
+                                    checkAreaResult[i, 1]++;//离线设备数
+                                }
+                                if (dataItem.status.adStage == AdStage.AdUploading && dataItem.status.clientStage == ClientStage.idle && dataItem.status.IsCaptureNow == false)
+                                {
+                                    checkAreaResult[i, 2]++;//在线且正在上传设备数
 
+                                }
+                                if (dataItem.status.adStage == AdStage.AdStored)
+                                {
+                                    //上传完成设备数每次都在变化，只需要把完成的设备ID存起来，后面直接读取count
+                                    AnalyzeAreaList[i].Add(dataItem.intDeviceID);//把上传完成的设备加入list中
+
+                                    //checkAreaResult[i, 3]++;//上传完成设备数
+                                    //复位idle
+                                }
+
+                            }// end of if contains
+                        }// end of for
+                    }//end of foreach
+
+                    //for循环判断每一组的情况(计算比较checkAreaResult)
+                    //上传
+                    //分析
+                    for (int i = 0; i < AreaDeviceList.Count; i++)
+                    {
+                        //采集完成，准备上传
+                        if (checkAreaResult[i, 0] >= (htClient.Count - checkAreaResult[i, 1] - maxBadClient) && (checkAreaResult[i, 0] > maxBadClient))
+                        {
+                            //开始上传
+                            Console.WriteLine("开始上传");
+                            UploadData();
+                            Log.Debug("开始上传");
+                        }
+                        //上传完成，准备分析
+                        if ((AnalyzeAreaList[i].Count >= AreaDeviceList[i].GetLength(1) - checkAreaResult[i, 1] - maxBadClient) && (AnalyzeAreaList[i].Count > maxBadClient) && checkAreaResult[i, 2] == 0) //没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
+                        {
+                            AnalyzeData(AnalyzeAreaList[i]); //分析AD数据并保存结果到数据库
+
+                            if (IsAutoTest == true)
+                            {
+                                //TODO:把所有设备的立即采样属性设成立即采样
                             }
                         }
                     }
@@ -804,6 +880,11 @@ namespace WizepipesSocketServer
             return result;
         }
 
+        public void checkAreaPair()
+        {
+
+        }
+
         /*
        *根据参数计算偏移值
        *偏移点数：n    正数A超前B，负数A滞后B
@@ -906,7 +987,7 @@ namespace WizepipesSocketServer
 
         public byte[] SetCapTime(int id)
         {
-            byte[] cmd = cmdItem.CmdSetCapTime;
+            byte[] cmd = cmdItem.CmdSetCapTimeTemporary;
             if (DateTime.Now.Minute + CapNextTime <= 59)
             {
                 cmd[9] = (byte)DateTime.Now.Hour;
@@ -919,41 +1000,9 @@ namespace WizepipesSocketServer
                 cmd[10] = (byte)(DateTime.Now.Minute + CapNextTime - 60 + 1);
             }
 
-            if (IsAutoTest == true)
-            {
-                AddCmdToQueue(0xFF, cmd);
-            }
-            //else AddCmdToQueue(id, cmd);
-
             return cmd;
         }
 
-        //for set capTime
-        public void AddCmdToQueue(int id, byte[] cmd)
-        {
-            if (id == 0xFF) //立即采样的测试使用
-            {
-                foreach (DataItem dataItem in htClient.Values)
-                {
-                    dataItem.sendDataQueue.Enqueue(cmd);
-                    dataItem.status.adStage = AdStage.Idle;
-                }
-            }
-            /*else
-            {
-                foreach (DataItem dataItem in htClient.Values)
-                {
-                    if (dataItem.intDeviceID == id)
-                    {
-                        dataItem.sendDataQueue.Enqueue(cmd);
-                        if (cmd[2] == 0x25)
-                        {
-                            dataItem.status.adStage = AdStage.Idle;
-                        }
-                    }
-                }
-            }*/
-        }
 
         //显示哈希表中设备的各项信息
         public string ViewClientInfo()
