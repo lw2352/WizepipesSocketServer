@@ -397,14 +397,11 @@ namespace WizepipesSocketServer
                             deleteAddress = dataItem.strAddress;
                         }
 
-                        #region MyRegion
-
-
-
+                        #region past
 
                         //TODO:对采样完成和上传的判断按照区域来，每个区域的状态要有判断
                         //对立即采样的设备单独处理
-                        if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
+                        /*if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
                         {
                             adFinishedClientNum++;
                         }
@@ -430,7 +427,7 @@ namespace WizepipesSocketServer
                             {
                                 dataItem.status.IsCaptureNow = false;
                             }
-                        }
+                        }*/
                         #endregion
 
 
@@ -460,7 +457,7 @@ namespace WizepipesSocketServer
 
                     #region past
                     //采集完成，准备上传
-                    if (adFinishedClientNum >= (htClient.Count - offlineClientNum - maxBadClient) && (adFinishedClientNum > maxBadClient))
+                    /*if (adFinishedClientNum >= (htClient.Count - offlineClientNum - maxBadClient) && (adFinishedClientNum > maxBadClient))
                     {
                         //开始上传
                         Console.WriteLine("开始上传");
@@ -479,7 +476,7 @@ namespace WizepipesSocketServer
                             SetCapTime(0xFF); //自动测试打开后，采样完成会设置下一次的采样时间
                             Log.Debug("AD数据存储完毕，重设时间");
                         }
-                    }
+                    }*/
                     #endregion
 
                 }
@@ -510,11 +507,21 @@ namespace WizepipesSocketServer
                         {
                             List<byte[]> DbCmdLsit = new List<byte[]>();
 
-
-                            /*for (int i = 0; i < cfgList.Count; i++)
+                            //TODO：利用索引insert和removeAt指定位置的元素
+                            if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
-                                DbCmdLsit.Add(null);
-                            }*/
+                                DbCmdLsit = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
+                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
+                                Console.WriteLine(msg);
+                                Log.Debug(msg);
+                            }
+                            else
+                            {
+                                for (int i = 0; i < cfgList.Count; i++)
+                                {
+                                    DbCmdLsit.Add(null);
+                                }
+                            }
 
                             //Convert.ToInt32(null) == 0;
                             if (cfgList[0] == 1) //设置采样时刻--0x25
@@ -549,9 +556,15 @@ namespace WizepipesSocketServer
                                 //if not include, add it
                                 if (!DbCmdLsit.Contains(cmdCapTime))
                                 {
-                                    DbCmdLsit.Add(cmdCapTime);
+                                    DbCmdLsit.RemoveAt(0);
+                                    DbCmdLsit.Insert(0, cmdCapTime);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdCapTime));
                                 }
+                            }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(0);
+                                DbCmdLsit.Insert(0, null);
                             }
 
 
@@ -567,31 +580,95 @@ namespace WizepipesSocketServer
 
                                 if (!DbCmdLsit.Contains(cmdSetOpenAndCloseTime))
                                 {
-                                    DbCmdLsit.Add(cmdSetOpenAndCloseTime);
+                                    DbCmdLsit.RemoveAt(1);
+                                    DbCmdLsit.Insert(1, cmdSetOpenAndCloseTime);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdSetOpenAndCloseTime));
                                 }
                             }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(1);
+                                DbCmdLsit.Insert(1, null);
+                            }
 
-                            if (cfgList[2] == 1)//是否立即采样--0x25
+
+                            if (cfgList[2] == 1)//是否立即采样--0x28
                             {
                                 dataItem.status.IsCaptureNow = true;
                                 dataItem.status.adStage = AdStage.Idle;
-                                byte[] Cmd = SetCapTime(dataItem.intDeviceID);
-                                if (DbCmdLsit.Contains(Cmd))
+                                if (DbCmdLsit[2] == null)
                                 {
-                                    DbCmdLsit.Add(Cmd); //设置立即采样
+                                    byte[] Cmd = SetCapTime(dataItem.intDeviceID);
+                                    DbCmdLsit.RemoveAt(2);
+                                    DbCmdLsit.Insert(2, Cmd);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
                                 }
 
                             }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(2);
+                                DbCmdLsit.Insert(2, null);
+                            }
+
 
                             if (cfgList[3] == 1)//是否读取Gps经纬度信息--0x27
                             {
                                 if (!DbCmdLsit.Contains(cmdItem.CmdReadGPSData))
                                 {
-                                    DbCmdLsit.Add(cmdItem.CmdReadGPSData);
+                                    DbCmdLsit.RemoveAt(3);
+                                    DbCmdLsit.Insert(3, cmdItem.CmdReadGPSData);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(cmdItem.CmdReadGPSData));
                                 }
+                            }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(3);
+                                DbCmdLsit.Insert(3, null);
+                            }
+
+                            if (cfgList[4] == 1)//是否设置AP名称--0x31
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPssid;
+                                byte[] SetAPName = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApName"));//转换成字符型
+                                for (int i = 0, j = 9; i < SetAPName.Length; i++)
+                                {
+                                    Cmd[j++] = SetAPName[i];
+                                }
+                                if (!DbCmdLsit.Contains(Cmd))
+                                {
+                                    DbCmdLsit.RemoveAt(4);
+                                    DbCmdLsit.Insert(4, Cmd);
+                                    Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
+                                }
+
+                            }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(4);
+                                DbCmdLsit.Insert(4, null);
+                            }
+
+                            if (cfgList[5] == 1)//是否设置AP密码--0x32
+                            {
+                                byte[] Cmd = cmdItem.CmdSetAPpassword;
+                                byte[] SetAPpassword = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApPassword"));
+                                for (int i = 0, j = 9; i < SetAPpassword.Length; i++)
+                                {
+                                    Cmd[j++] = SetAPpassword[i];
+                                }
+                                if (!DbCmdLsit.Contains(Cmd))
+                                {
+                                    DbCmdLsit.RemoveAt(5);
+                                    DbCmdLsit.Insert(5, Cmd);
+                                    Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
+                                }
+
+                            }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(5);
+                                DbCmdLsit.Insert(5, null);
                             }
 
                             if (cfgList[6] == 1)//是否设置Server的IP--0x29
@@ -606,10 +683,16 @@ namespace WizepipesSocketServer
                                 Cmd[12] = Convert.ToByte(sArray[3]);
                                 if (!DbCmdLsit.Contains(Cmd))
                                 {
-                                    DbCmdLsit.Add(Cmd);
+                                    DbCmdLsit.RemoveAt(6);
+                                    DbCmdLsit.Insert(6, Cmd);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
                                 }
 
+                            }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(6);
+                                DbCmdLsit.Insert(6, null);
                             }
 
                             if (cfgList[7] == 1)//是否设置Server的Port--0x30
@@ -623,41 +706,15 @@ namespace WizepipesSocketServer
                                 Cmd[10] = bytePort[1];
                                 if (!DbCmdLsit.Contains(Cmd))
                                 {
-                                    DbCmdLsit.Add(Cmd);
+                                    DbCmdLsit.RemoveAt(7);
+                                    DbCmdLsit.Insert(7, Cmd);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
                                 }
                             }
-
-                            if (cfgList[4] == 1)//是否设置AP名称--0x31
+                            else
                             {
-                                byte[] Cmd = cmdItem.CmdSetAPssid;
-                                byte[] SetAPName = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApName"));//转换成字符型
-                                for (int i = 0, j = 9; i < SetAPName.Length; i++)
-                                {
-                                    Cmd[j++] = SetAPName[i];
-                                }
-                                if (!DbCmdLsit.Contains(Cmd))
-                                {
-                                    DbCmdLsit.Add(Cmd);
-                                    Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
-                                }
-
-                            }
-
-                            if (cfgList[5] == 1)//是否设置AP密码--0x32
-                            {
-                                byte[] Cmd = cmdItem.CmdSetAPpassword;
-                                byte[] SetAPpassword = strToByte(NetDb.readsensorcfgItem(dataItem.intDeviceID, "ApPassword"));
-                                for (int i = 0, j = 9; i < SetAPpassword.Length; i++)
-                                {
-                                    Cmd[j++] = SetAPpassword[i];
-                                }
-                                if (!DbCmdLsit.Contains(Cmd))
-                                {
-                                    DbCmdLsit.Add(Cmd);
-                                    Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(Cmd));
-                                }
-
+                                DbCmdLsit.RemoveAt(7);
+                                DbCmdLsit.Insert(7, null);
                             }
 
                             if (cfgList[8] == 1) //设备重连--0x33
@@ -665,16 +722,22 @@ namespace WizepipesSocketServer
                                 byte[] CmdReconnectTcp = cmdItem.CmdReconnectTcp;
                                 if (!DbCmdLsit.Contains(CmdReconnectTcp))
                                 {
-                                    DbCmdLsit.Add(CmdReconnectTcp);
+                                    DbCmdLsit.RemoveAt(8);
+                                    DbCmdLsit.Insert(8, CmdReconnectTcp);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(CmdReconnectTcp));
                                 }
 
                             }
+                            else
+                            {
+                                DbCmdLsit.RemoveAt(8);
+                                DbCmdLsit.Insert(8, null);
+                            }
 
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
-                                DbCmdLsit = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
-                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
+                                htSendCmd[dataItem.intDeviceID] = DbCmdLsit;
+                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
                                 Console.WriteLine(msg);
                                 Log.Debug(msg);
                             }
@@ -703,8 +766,8 @@ namespace WizepipesSocketServer
                         for (int i = 0; i < checkResult.GetLength(0); i++)
                         {
                             //把结果写入数据库
-                            if(checkResult[i, 1] == 1)
-                            NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0);//写入数据库表示立即采样完成
+                            if (checkResult[i, 1] == 1)
+                                NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0);//写入数据库表示立即采样完成
                             //TODO;复位设备的立即采样属性
                         }
                     }
@@ -714,7 +777,7 @@ namespace WizepipesSocketServer
                         //TODO：初始化读取areaID里面的设备ID
                         AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
                     }
-                    if (AnalyzeAreaList == null)
+                    if (AnalyzeAreaList == null && AreaDeviceList != null)
                     {
                         //初始化
                         AnalyzeAreaList = new List<List<int>>(AreaDeviceList.Count);//主要是初始化行数
@@ -745,13 +808,13 @@ namespace WizepipesSocketServer
                                     checkAreaResult[i, 2]++;//在线且正在上传设备数
 
                                 }
-                                if (dataItem.status.adStage == AdStage.AdStored)
+                                if (dataItem.status.adStage == AdStage.AdStored && dataItem.status.IsCaptureNow == false)
                                 {
                                     //上传完成设备数每次都在变化，只需要把完成的设备ID存起来，后面直接读取count
                                     AnalyzeAreaList[i].Add(dataItem.intDeviceID);//把上传完成的设备加入list中
 
                                     //checkAreaResult[i, 3]++;//上传完成设备数
-                                    //复位idle
+                                    //TODO:复位idle
                                 }
 
                             }// end of if contains
@@ -848,6 +911,7 @@ namespace WizepipesSocketServer
 
                 if (Convert.ToInt32(distance) > 0 && Convert.ToInt32(distance) < pipeInfoList[3])
                 {
+                    //TODO:sql语句有问题
                     NetDb.UpdateLeakTimes(pipeInfoList[2]);//更新管道漏水次数
 
                     double scale = 0;
@@ -929,10 +993,6 @@ namespace WizepipesSocketServer
             }
         }
 
-        public void checkAreaPair()
-        {
-
-        }
 
         /*
        *根据参数计算偏移值
