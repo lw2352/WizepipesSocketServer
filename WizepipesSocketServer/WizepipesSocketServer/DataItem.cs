@@ -190,7 +190,7 @@ namespace WizepipesSocketServer
                             Console.WriteLine(msg);
                             Log.Debug(msg);
                             NetDb.UpdateSensorCfg(intDeviceID, "IsSetCapTime", 0);
-                            NetDb.UpdateSensorCfg(intDeviceID, "IsCaptureNow", 0); 
+                            //NetDb.UpdateSensorCfg(intDeviceID, "IsCaptureNow", 0); 
                         }
 
                         break;
@@ -277,6 +277,7 @@ namespace WizepipesSocketServer
                         Console.WriteLine(msg);
                         Log.Debug(msg);
                         NetDb.UpdateSensorCfg(intDeviceID, "IsReconnect", 0);
+                        NetDb.UpdateSensorInfo(intDeviceID, "Status", 0);//接收到8266的重连确认信息后，置设备状态为不在线0
                         break;
 
                     case 0xFF:

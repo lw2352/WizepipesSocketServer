@@ -799,8 +799,19 @@ namespace WizepipesSocketServer
                 if (ds1 != null)
                 {
                     int i = 0;
+                    int j = 0;
+                    int k = 0;
                     int count = ds1.Tables[0].Rows.Count;
-                    int[,] result = new int[count,3];
+                    while (j < count)
+                    {
+                        string item = (ds1.Tables[0].Rows[j]["IsCapture"]).ToString();
+                        if (item != "" && Convert.ToInt32(item) == 1)
+                        {
+                            k++;
+                        }
+                        j++;
+                    }
+                    int[,] result = new int[k,3];
                     while (i < count)
                     {
                         string item = (ds1.Tables[0].Rows[i]["IsCapture"]).ToString();
@@ -1057,7 +1068,7 @@ namespace WizepipesSocketServer
                     if (count > 0)
                     {
                         result = new int[count];
-                        returnList = new List<int[]>(count);
+                        returnList = new List<int[]>(count);//初始化
                         while (i < count)
                         {
                             string item = (ds1.Tables[0].Rows[i]["AreaID"]).ToString();
@@ -1081,7 +1092,8 @@ namespace WizepipesSocketServer
                     if (ds2 != null)
                     {
                         int j = 0;
-                        int count = ds1.Tables[0].Rows.Count;
+                        int k = 0;
+                        int count = ds2.Tables[0].Rows.Count;
                         if (count > 0)
                         {
                             int[] temp = new int[count];
@@ -1090,11 +1102,11 @@ namespace WizepipesSocketServer
                                 string item = (ds2.Tables[0].Rows[j]["IntdeviceID"]).ToString();
                                 if (item != "")
                                 {
-                                    temp[j] = Convert.ToInt32(item);
+                                    temp[k++] = Convert.ToInt32(item);
                                 }
                                 j++;
                             }
-                            returnList[i] = temp;
+                            returnList.Add(temp);
                         }
                         else returnList[i] = null;
                     }//end of if  

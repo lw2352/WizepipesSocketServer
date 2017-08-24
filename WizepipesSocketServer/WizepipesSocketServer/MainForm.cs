@@ -19,7 +19,7 @@ namespace WizepipesSocketServer
         {
             InitializeComponent();
             ReadCfg();
-            NetDb.readsensorcfg(3);
+            
         }
 
         public void ReadCfg()
@@ -136,53 +136,80 @@ namespace WizepipesSocketServer
 
             //int i=a.GetLength(0);//行数
             //int j = a.GetLength(1);//列数
+            byte[] CmdSetCapTime = new byte[] { 0xA5, 0xA5, 0x25, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x30,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
+                0xFF, 0x5A, 0x5A };
 
-            List<List<int>> sendDataQueue = new List<List<int>>();
-        List<int> timesList = new List<int>();
-            timesList.Add(1);
-            timesList.Add(2);
-            timesList.Add(3);
-            timesList.Add(4);
-            timesList.Add(5);
-            sendDataQueue.Add(timesList);
-            sendDataQueue.Add(timesList);
-            sendDataQueue.Add(timesList);
-            sendDataQueue.Add(timesList);
+            List<byte[]> cfgList = new List<byte[]>();
+            //cfgList = NetDb.readsensorcfg(3);
+            cfgList.Add(null);
+            cfgList.Add(null);
+            cfgList.Add(null);
 
-            /*byte[] CmdSetCapTime = new byte[] { 0xA5, 0xA5, 0x25, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x30,
-                    0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
-                    0xFF, 0x5A, 0x5A };
+            cfgList[0] = CmdSetCapTime;
+            cfgList[2] = CmdSetCapTime;
 
-                string strHour = "18,9,10,22";
-                string strMinute = "15,16,52,45";
-                //最多24组
-                string[] HourArray = strHour.Split(new char[] { ',' });
-                string[] MinuteArray = strMinute.Split(new char[] { ',' });
 
-                List<int> timesList = new List<int>(24);
+            int[,] a = new int[3, 4] {
+                {0, 1, 2, 3} ,   /*  初始化索引号为 0 的行 */
+                {4, 5, 6, 7} ,   /*  初始化索引号为 1 的行 */
+                {8, 9, 10, 11}   /*  初始化索引号为 2 的行 */
+            };
+            
 
-                for (int i = 0; i < HourArray.Length; i++)
-                {
-                    timesList.Add(Convert.ToInt32(HourArray[i]) * 60 + Convert.ToInt32(MinuteArray[i]));
-                }
+            List<List<int>> sendDataQueue = new List<List<int>>(6);
+            if (sendDataQueue.Count > 0)
+            {
+                int j = sendDataQueue[0].Count;
+            }
+            List<int> timesList = new List<int>();
 
-                timesList.Sort();//默认从小到大排序,排序完了之后分解并存放在数组中
-                int hour = timesList[0] / 60;
-                int minute = timesList[0]-60*hour;
+            for (int i = 0; i < 6; i++)
+            {
+                sendDataQueue.Add(timesList);
+            }
 
-                for (int i = 0, j = 9; i < 24; i++)
-                {
-                    if (i < HourArray.GetLength(0))
-                    {
-                        CmdSetCapTime[j++] = Convert.ToByte(HourArray[i]);
-                        CmdSetCapTime[j++] = Convert.ToByte(MinuteArray[i]);
-                    }
-                }*/
+            for (int i = 0; i < 6; i++)
+            {
+                sendDataQueue[i].Add(1);
+            }
+            
+
+            List<byte[]> DbCmdLsit = new List<byte[]>();
+            DbCmdLsit.Add(CmdSetCapTime);
+
+            int l = DbCmdLsit[0][4];
+
+            /* string strHour = "18,9,10,22";
+             string strMinute = "15,16,52,45";
+             //最多24组
+             string[] HourArray = strHour.Split(new char[] { ',' });
+             string[] MinuteArray = strMinute.Split(new char[] { ',' });
+
+             List<int> timesList = new List<int>(24);
+
+             for (int i = 0; i < HourArray.Length; i++)
+             {
+                 timesList.Add(Convert.ToInt32(HourArray[i]) * 60 + Convert.ToInt32(MinuteArray[i]));
+             }
+
+             timesList.Sort();//默认从小到大排序,排序完了之后分解并存放在数组中
+             int hour = timesList[0] / 60;
+             int minute = timesList[0]-60*hour;
+
+             for (int i = 0, j = 9; i < 24; i++)
+             {
+                 if (i < HourArray.GetLength(0))
+                 {
+                     CmdSetCapTime[j++] = Convert.ToByte(HourArray[i]);
+                     CmdSetCapTime[j++] = Convert.ToByte(MinuteArray[i]);
+                 }
+             }*/
 
         }
 
