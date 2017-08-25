@@ -1089,7 +1089,7 @@ namespace WizepipesSocketServer
                 {
                     DataSet ds2 = new DataSet("tsensor");
                     string strSQL2 =
-                        "SELECT distinct IntdeviceID FROM tsensor where AreaID = "+result[i]+" order by IntdeviceID ASC"; //返回不重复的目标字段
+                        "SELECT distinct IntdeviceID FROM tsensor where AreaID = "+result[i]+ " and IntdeviceID is not null order by IntdeviceID ASC"; //返回不重复的目标字段
                     ds2 = MySQLDB.SelectDataSet(strSQL2, null);
                     if (ds2 != null)
                     {

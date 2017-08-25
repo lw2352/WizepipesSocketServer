@@ -835,7 +835,7 @@ namespace WizepipesSocketServer
                     for (int i = 0; i < AreaDeviceList.Count; i++)
                     {
                         //采集完成，准备上传
-                        if ((checkAreaResult[i, 0] >= (htClient.Count - checkAreaResult[i, 1] - maxBadClient)) && (checkAreaResult[i, 0] > maxBadClient))
+                        if ((checkAreaResult[i, 0] >= (AreaDeviceList[i].Length - checkAreaResult[i, 1] - maxBadClient)) && (checkAreaResult[i, 0] > maxBadClient))
                         {
                             //开始上传
                             Console.WriteLine("开始上传");

@@ -43,6 +43,7 @@ namespace WizepipesSocketServer
             string ConfigIsAutoTest = System.Configuration.ConfigurationManager.AppSettings["IsAutoTest"];
             string ConfigCapNextTime = System.Configuration.ConfigurationManager.AppSettings["CapNextTime"];
             string DB = System.Configuration.ConfigurationManager.AppSettings["ServerDB"];
+            string ImagePath = System.Configuration.ConfigurationManager.AppSettings["ImagePath"];
 
             msg = "从appConfig读取到的配置信息是：" + "ServerIP:" + ConfigIp + "\r\nServerPort:" + ConfigPort +
                   "\r\nbufferLength:" + ConfigbufferLength + "\r\nAdlength:" + ConfigAdlength +
@@ -68,6 +69,7 @@ namespace WizepipesSocketServer
             server.CfgIsAutoTest = Convert.ToInt32(ConfigIsAutoTest);
             server.CfgCapNextTime = Convert.ToInt32(ConfigCapNextTime);
             MySQLDB.strDbConn = DB;
+            ZedToPng.Path = ImagePath;
 
         }
 
@@ -136,6 +138,9 @@ namespace WizepipesSocketServer
 
             //int i=a.GetLength(0);//行数
             //int j = a.GetLength(1);//列数
+            List<int[]> AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
+
+
             NetDb.UpdateLeakPointScale(5,0.456123);
 
             string distance = "3.9";
