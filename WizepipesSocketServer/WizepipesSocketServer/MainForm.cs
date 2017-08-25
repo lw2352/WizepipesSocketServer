@@ -136,6 +136,20 @@ namespace WizepipesSocketServer
 
             //int i=a.GetLength(0);//行数
             //int j = a.GetLength(1);//列数
+            NetDb.UpdateLeakPointScale(5,0.456123);
+
+            string distance = "3.9";
+            if (Convert.ToDouble(distance) > 0 && Convert.ToDouble(distance) < 5)
+            {
+                distance = null;
+            }
+
+            NetDb.UpdateLeakTimes(3);
+
+            double Longitude = 114.12456789;
+            Longitude = (int)(Longitude * 1000000);
+            Longitude = Longitude / 1000000;
+
             byte[] CmdSetCapTime = new byte[] { 0xA5, 0xA5, 0x25, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x30,
                 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,

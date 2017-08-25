@@ -22,8 +22,8 @@ namespace WizepipesSocketServer
         public static Hashtable htClient = new Hashtable(); //strAddress--DataItem
         public static Socket ServerSocket;
         public static Hashtable htSendCmd = new Hashtable(); //intID--QueueCmd
-        public static int[,] MultiUserList;//多用户立即采样,int[] [userID，aID,bID]//TODO:用二维数组，没必要用List
-        //TODO:对于区域来说，和多用户立即采样一样，判断时使用for循环
+        public static int[,] MultiUserList;//多用户立即采样,int[] [userID，aID,bID]//用二维数组，没必要用List
+        //对于区域来说，和多用户立即采样一样，判断时使用for循环
         public static List<int[]> AreaDeviceList;//1个数组包含一个区域areaID里面的所有设备ID
         public static List<List<int>> AnalyzeAreaList;//存储已上传完成的设备ID
         public static CmdItem cmdItem = new CmdItem(); //实例化
@@ -399,7 +399,7 @@ namespace WizepipesSocketServer
 
                         #region past
 
-                        //TODO:对采样完成和上传的判断按照区域来，每个区域的状态要有判断
+                        //对采样完成和上传的判断按照区域来，每个区域的状态要有判断
                         //对立即采样的设备单独处理
                         /*if (dataItem.status.adStage == AdStage.AdFinished && dataItem.status.IsCaptureNow == false)
                         {
@@ -433,7 +433,7 @@ namespace WizepipesSocketServer
 
                         if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //发送命令哈希表中是否包含当前dataItem的id
                         {
-                            //TODO：sendCmdQueue应该只读取但不移除，只有当命令发送成功即数据库的IsSet字段为0时才移除
+                            //sendCmdQueue应该只读取但不移除，只有当命令发送成功即数据库的IsSet字段为0时才移除
                             List<byte[]> sendCmdQueue = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
                             if (sendCmdQueue != null)
                             {
@@ -507,13 +507,13 @@ namespace WizepipesSocketServer
                         {
                             List<byte[]> DbCmdLsit = new List<byte[]>();
 
-                            //TODO：利用索引insert和removeAt指定位置的元素
+                            //利用索引insert和removeAt指定位置的元素
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
                                 DbCmdLsit = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
-                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
-                                Console.WriteLine(msg);
-                                Log.Debug(msg);
+                                //string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
+                                //Console.WriteLine(msg);
+                                //Log.Debug(msg);
                             }
                             else
                             {
@@ -724,6 +724,8 @@ namespace WizepipesSocketServer
                                 {
                                     DbCmdLsit.RemoveAt(8);
                                     DbCmdLsit.Insert(8, CmdReconnectTcp);
+                                    NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsReconnect", 0);
+                                    NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", 0);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(CmdReconnectTcp));
                                 }
 
@@ -737,9 +739,9 @@ namespace WizepipesSocketServer
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
                                 htSendCmd[dataItem.intDeviceID] = DbCmdLsit;
-                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
-                                Console.WriteLine(msg);
-                                Log.Debug(msg);
+                                //string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
+                                //Console.WriteLine(msg);
+                                //Log.Debug(msg);
                             }
 
                             //把从数据库读取的命令添加到队列中
@@ -756,8 +758,9 @@ namespace WizepipesSocketServer
 
                     } //end of foreach
 
-                    //TODO:读取数据库的立即采样设备对
+                    //读取数据库的立即采样设备对
                     MultiUserList = NetDb.GetDevicePair();//"userID"]);"SensorAID"]);"SensorBID"
+                    List<int> captureNowOverIDList = new List<int>();
                     if (MultiUserList != null)
                     {
                         int[,] checkResult = new int[MultiUserList.GetLength(0),
@@ -767,14 +770,18 @@ namespace WizepipesSocketServer
                         {
                             //把结果写入数据库
                             if (checkResult[i, 1] == 1)
-                                NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0);//写入数据库表示立即采样完成
-                            //TODO;复位设备的立即采样属性
+                            {
+                                NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0); //写入数据库表示立即采样完成
+                                //复位设备的立即采样属性
+                                captureNowOverIDList.Add(MultiUserList[i, 1]);
+                                captureNowOverIDList.Add(MultiUserList[i, 2]);
+                            }
                         }
                     }
 
                     if (AreaDeviceList == null)
                     {
-                        //TODO：初始化读取areaID里面的设备ID
+                        //初始化读取areaID里面的设备ID
                         AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
                     }
                     if (AnalyzeAreaList == null && AreaDeviceList != null)
@@ -790,6 +797,8 @@ namespace WizepipesSocketServer
                     int[,] checkAreaResult = new int[AreaDeviceList.Count, 3];
                     foreach (DataItem dataItem in htClient.Values)
                     {
+
+
                         for (int i = 0; i < AreaDeviceList.Count; i++)
                         {
                             if (AreaDeviceList[i].Contains(dataItem.intDeviceID))
@@ -812,9 +821,8 @@ namespace WizepipesSocketServer
                                 {
                                     //上传完成设备数每次都在变化，只需要把完成的设备ID存起来，后面直接读取count
                                     AnalyzeAreaList[i].Add(dataItem.intDeviceID);//把上传完成的设备加入list中
-
-                                    //checkAreaResult[i, 3]++;//上传完成设备数
-                                    //TODO:复位idle
+                                    //复位idle
+                                    dataItem.status.adStage = AdStage.Idle;
                                 }
 
                             }// end of if contains
@@ -907,19 +915,18 @@ namespace WizepipesSocketServer
                 Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                 Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                 Console.WriteLine("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
-                Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[2] + "SensorName：" + sensorName + "距离是：" + distance);
+                Console.WriteLine("管道信息为：" + "管子ID：" + pipeInfoList[2] + "--SensorName：" + sensorName[1] + "-距离是：" + distance);
 
-                if (Convert.ToInt32(distance) > 0 && Convert.ToInt32(distance) < pipeInfoList[3])
+                if (Convert.ToDouble(distance) > 0 && Convert.ToDouble(distance) < pipeInfoList[3])
                 {
-                    //TODO:sql语句有问题
                     NetDb.UpdateLeakTimes(pipeInfoList[2]);//更新管道漏水次数
 
                     double scale = 0;
                     if (NetDb.getSensorIsPipeStart(pipeInfoList[2].ToString(), sensorName[0]) == "1")//标记漏点在管子上的比例位置：1-尾部，0-头部
                     {
-                        scale = Convert.ToDouble(distance) / pipeInfoList[3];
+                        scale = 1 - (Convert.ToDouble(distance) / pipeInfoList[3]);
                     }
-                    else scale = 1 - (Convert.ToDouble(distance) / pipeInfoList[3]);
+                    else scale = Convert.ToDouble(distance) / pipeInfoList[3]; 
 
                     NetDb.UpdateLeakPointScale(pipeInfoList[2], scale);
                 }
@@ -941,33 +948,27 @@ namespace WizepipesSocketServer
         {
             try
             {
-
-                int[,] result = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1]; //二维数组 <userID--0/1>
+                int[,] result = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1]; //二维(N行*2列)数组 <userID--0/1>
                 int[,] resultPair = new int[devicePair.GetLength(0), devicePair.GetLength(1) - 1]; //<0/1, 0/1>
                 foreach (DataItem dataItem in htClient.Values) //总表
                 {
                     for (int i = 0; i < resultPair.GetLength(0); i++) //行
                     {
-                        for (int j = 0; j < devicePair.GetLength(1) - 1; j++) //列
+                        for (int j = 0; j < resultPair.GetLength(1); j++) //列
                         {
-                            if (dataItem.intDeviceID == devicePair[i, 1] && dataItem.status.adStage == AdStage.AdStored)
+                            if (dataItem.intDeviceID == devicePair[i, j+1])//循环匹配ID号
                             {
-                                resultPair[i, j] = 1;
-                            }
-                            else
-                            {
-                                resultPair[i, j] = 0;
-                            }
-                        }
+                                if (dataItem.status.adStage == AdStage.AdStored)
+                                {
+                                    resultPair[i, j] = 1;
 
-                        /*if (dataItem.intDeviceID == devicePair[i,2] && dataItem.status.adStage == AdStage.AdStored)
-                        {
-                            resultPair[i, 1] = 1;
+                                }
+                                else
+                                {
+                                    resultPair[i, j] = 0;
+                                }
+                            }
                         }
-                        else
-                        {
-                            resultPair[i, 1] = 0;
-                        }*/
 
                     }
                 } //end of foreach

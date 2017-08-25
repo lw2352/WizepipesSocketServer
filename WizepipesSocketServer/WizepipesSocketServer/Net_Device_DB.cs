@@ -801,6 +801,7 @@ namespace WizepipesSocketServer
                     int i = 0;
                     int j = 0;
                     int k = 0;
+                    int l = 0;
                     int count = ds1.Tables[0].Rows.Count;
                     while (j < count)
                     {
@@ -812,14 +813,15 @@ namespace WizepipesSocketServer
                         j++;
                     }
                     int[,] result = new int[k,3];
-                    while (i < count)
+                    while (i < count && l<k)
                     {
                         string item = (ds1.Tables[0].Rows[i]["IsCapture"]).ToString();
                         if (item != "" && Convert.ToInt32(item) == 1)
                         {
-                            result[i,0] = (int)(ds1.Tables[0].Rows[i]["userID"]);
-                            result[i,1] = (int)(ds1.Tables[0].Rows[i]["SensorAID"]);
-                            result[i,2] = (int)(ds1.Tables[0].Rows[i]["SensorBID"]);
+                            result[l,0] = (int)(ds1.Tables[0].Rows[i]["userID"]);
+                            result[l,1] = (int)(ds1.Tables[0].Rows[i]["SensorAID"]);
+                            result[l,2] = (int)(ds1.Tables[0].Rows[i]["SensorBID"]);
+                            l++;
                         }
                         i++;
                     }//end  of while
@@ -900,7 +902,7 @@ namespace WizepipesSocketServer
                     string strSQL = "";
                     bool IsDelSuccessInsert = false;
                     strSQL = " insert into tpipeleakreport (PipeID,LeakTimes) values" +
-                             "(?pipeID,?leakTimes);";
+                             " (?pipeID,?leakTimes);";
 
                     parmssInsert = new MySqlParameter[]
                     {
@@ -912,7 +914,7 @@ namespace WizepipesSocketServer
 
                     try
                     {
-                        IsDelSuccessInsert = MySQLDB.ExecuteNonQry(strSQL, parmss);
+                        IsDelSuccessInsert = MySQLDB.ExecuteNonQry(strSQL, parmssInsert);
 
                         if (IsDelSuccessInsert != false)
                         {
@@ -933,7 +935,7 @@ namespace WizepipesSocketServer
                 {
 
                     string strSQL2 =
-                        "UPDATE tpipeleakreport SET LeakTimes=?leakTimes FROM tpipeleakreport where pipeID=" + pipeID;
+                        "UPDATE tpipeleakreport SET LeakTimes=?leakTimes where pipeID=" + pipeID;
                     parmss = new MySqlParameter[]
                     {
                         new MySqlParameter("?leakTimes", MySqlDbType.Int32),
@@ -1023,7 +1025,7 @@ namespace WizepipesSocketServer
             bool IsDelSuccess = false;
 
             string strSQL2 =
-                "UPDATE tpipe SET LeakPointScale=?scale FROM tpipeleakreport where pipeID=" + pipeID;
+                "UPDATE tpipe SET LeakPointScale=?scale where pipeID=" + pipeID;
             parmss = new MySqlParameter[]
             {
                 new MySqlParameter("?scale", MySqlDbType.VarChar),
