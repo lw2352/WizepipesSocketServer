@@ -796,10 +796,18 @@ namespace WizepipesSocketServer
                             //把结果写入数据库
                             if (checkResult[i, 1] == 1)
                             {
-                                NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0); //写入数据库表示立即采样完成
-                                //先存起来，后面的程序复位设备的立即采样属性
-                                captureNowOverIDList.Add(MultiUserList[i, 1]);
-                                captureNowOverIDList.Add(MultiUserList[i, 2]);
+                                if (IsAutoTest == false)
+                                {
+                                    NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0); //写入数据库表示立即采样完成
+                                    //先存起来，后面的程序复位设备的立即采样属性
+                                    captureNowOverIDList.Add(MultiUserList[i, 1]);
+                                    captureNowOverIDList.Add(MultiUserList[i, 2]);
+                                }
+                                else
+                                {
+                                    NetDb.UpdateSensorCfg(MultiUserList[i, 1], "IsCaptureNow", 1);
+                                    NetDb.UpdateSensorCfg(MultiUserList[i, 2], "IsCaptureNow", 1);
+                                }
                             }
                         }
                     }
@@ -891,11 +899,11 @@ namespace WizepipesSocketServer
                         {
                             AnalyzeData(i, AnalyzeAreaList[i]); //分析AD数据并保存结果到数据库
 
-                            if (IsAutoTest == true)
-                            {
+                            //if (IsAutoTest == true)
+                            //{
                                 //TODO:把所有设备的立即采样属性设成立即采样
                                 //根据两个传感器在同一个管道来设置
-                            }
+                            //}
                         }
                     }
 
