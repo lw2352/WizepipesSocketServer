@@ -374,6 +374,17 @@ namespace WizepipesSocketServer
             checkRecDataQueueResetEvent.Set();
         }
 
+        public bool CheckTimeout(DateTime heartTime, int maxSessionTimeout)
+        {
+            TimeSpan ts = DateTime.Now.Subtract(heartTime);
+            int elapsedSecond = Math.Abs((int)ts.TotalSeconds);
+                //2分钟在数据库标注，3分钟则断开
+            if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
+            {
+                return true;
+            }
+            else return false;
+        }
 
         //发送队列里面的命令
         private void CheckSendDataQueue(object state)
@@ -383,18 +394,34 @@ namespace WizepipesSocketServer
             {
                 try
                 {
-                    int adFinishedClientNum = 0; //发送采样完成信息的设备数
-                    int offlineClientNum = 0; //已离线设备（超过3分钟没有连上）
-                    int adUploadingAndOnlineClinetNum = 0; //AD数据已存储的设备数,也是在线的设备
+                    //int adFinishedClientNum = 0; //发送采样完成信息的设备数
+                    //int offlineClientNum = 0; //已离线设备（超过3分钟没有连上）
+                    //int adUploadingAndOnlineClinetNum = 0; //AD数据已存储的设备数,也是在线的设备
 
                     string deleteAddress = null;
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
-                        dataItem.CheckTimeout(maxTimeOut);
+                        if(CheckTimeout(dataItem.status.HeartTime, maxTimeOut))
+                        {
+                            Console.WriteLine("设备号：" + dataItem.intDeviceID + "超时,服务器主动断开连接");
+                            Log.Debug("设备号：" + dataItem.intDeviceID + "超时,服务器主动断开连接");
+                            dataItem.status.clientStage = ClientStage.offLine;
+                            NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", Convert.ToInt32(dataItem.status.clientStage));
+                            dataItem.CloseSocket();
+                        }
+                        else if (CheckTimeout(dataItem.status.HeartTime, maxTimeOut*10))
+                        {
+                            Console.WriteLine("设备号：" + dataItem.intDeviceID + "超时,服务器主动删除连接");
+                            Log.Debug("设备号：" + dataItem.intDeviceID + "超时,服务器主动删除连接");
+                            dataItem.status.clientStage = ClientStage.offLine;
+                            NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", Convert.ToInt32(dataItem.status.clientStage));
+                            deleteAddress = dataItem.strAddress;
+                        }
                         if (dataItem.status.clientStage == ClientStage.offLine && dataItem.intDeviceID == 0) //7-28 无效项，需删除
                         {
                             deleteAddress = dataItem.strAddress;
+                            htSendCmd.Remove(dataItem.intDeviceID);
                         }
 
                         #region past
@@ -511,9 +538,8 @@ namespace WizepipesSocketServer
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
                                 DbCmdLsit = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
-                                //string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
-                                //Console.WriteLine(msg);
-                                //Log.Debug(msg);
+                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
+                                Console.WriteLine(msg);
                             }
                             else
                             {
@@ -739,9 +765,8 @@ namespace WizepipesSocketServer
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
                                 htSendCmd[dataItem.intDeviceID] = DbCmdLsit;
-                                //string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
-                                //Console.WriteLine(msg);
-                                //Log.Debug(msg);
+                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
+                                Console.WriteLine(msg);
                             }
 
                             //把从数据库读取的命令添加到队列中
@@ -772,7 +797,7 @@ namespace WizepipesSocketServer
                             if (checkResult[i, 1] == 1)
                             {
                                 NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0); //写入数据库表示立即采样完成
-                                //复位设备的立即采样属性
+                                //先存起来，后面的程序复位设备的立即采样属性
                                 captureNowOverIDList.Add(MultiUserList[i, 1]);
                                 captureNowOverIDList.Add(MultiUserList[i, 2]);
                             }
@@ -797,7 +822,21 @@ namespace WizepipesSocketServer
                     int[,] checkAreaResult = new int[AreaDeviceList.Count, 3];
                     foreach (DataItem dataItem in htClient.Values)
                     {
-
+                        for (int j = 0; j < captureNowOverIDList.Count; j++)
+                        {
+                            if(captureNowOverIDList.Contains(dataItem.intDeviceID))
+                            {
+                                //复位立即采样属性
+                                dataItem.status.IsCaptureNow = false;
+                                dataItem.status.adStage = AdStage.Idle;
+                                dataItem.status.HeartTime = DateTime.Now;
+                                NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
+                                    dataItem.status.HeartTime.ToString(),
+                                    Convert.ToInt32(dataItem.status.clientStage),
+                                    Convert.ToInt32(dataItem.status.adStage));
+                            }
+                        }
+                        
 
                         for (int i = 0; i < AreaDeviceList.Count; i++)
                         {
@@ -823,6 +862,11 @@ namespace WizepipesSocketServer
                                     AnalyzeAreaList[i].Add(dataItem.intDeviceID);//把上传完成的设备加入list中
                                     //复位idle
                                     dataItem.status.adStage = AdStage.Idle;
+                                    dataItem.status.HeartTime = DateTime.Now;
+                                    NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
+                                        dataItem.status.HeartTime.ToString(),
+                                        Convert.ToInt32(dataItem.status.clientStage),
+                                        Convert.ToInt32(dataItem.status.adStage));
                                 }
 
                             }// end of if contains
@@ -904,8 +948,12 @@ namespace WizepipesSocketServer
                 if (pipeInfoList[3] != 0)//读出了管子长度
                 {
                     resultList = Net_Analyze.AutoAnalyze(idA, idB);
-
-                    distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000)).ToString();
+                    if (resultList[0] != "fail")
+                    {
+                        distance = (CalculateOffset(Convert.ToInt32(resultList[0]), pipeInfoList[3], 1000, 5000))
+                            .ToString();
+                    }
+                    else distance = "fail";
                 }
                 else distance = "fail";
 
@@ -919,16 +967,22 @@ namespace WizepipesSocketServer
 
                 if (Convert.ToDouble(distance) > 0 && Convert.ToDouble(distance) < pipeInfoList[3])
                 {
-                    NetDb.UpdateLeakTimes(pipeInfoList[2]);//更新管道漏水次数
-
                     double scale = 0;
+                    //更新管道漏水次数
+                    string leakTimes = NetDb.UpdateLeakTimes(pipeInfoList[2]);
+                    if (leakTimes != null)
+                    {
+                        NetDb.UpdateLeakPointScale(pipeInfoList[2], "Status", leakTimes);
+                    } 
+
+                    
                     if (NetDb.getSensorIsPipeStart(pipeInfoList[2].ToString(), sensorName[0]) == "1")//标记漏点在管子上的比例位置：1-尾部，0-头部
                     {
                         scale = 1 - (Convert.ToDouble(distance) / pipeInfoList[3]);
                     }
                     else scale = Convert.ToDouble(distance) / pipeInfoList[3]; 
 
-                    NetDb.UpdateLeakPointScale(pipeInfoList[2], scale);
+                    NetDb.UpdateLeakPointScale(pipeInfoList[2], "LeakPointScale", scale.ToString());
                 }
             }
         }
@@ -1127,6 +1181,16 @@ namespace WizepipesSocketServer
             }
             return msg;
         }
+
+        //测试画图的稳定性
+        public void TestZed()
+        {
+            AnalyzeList.Add(3);
+            AnalyzeList.Add(4);
+            AnalyzeList.Add(5);
+            AnalyzeData(AnalyzeList);
+        }
+
 
     }
 

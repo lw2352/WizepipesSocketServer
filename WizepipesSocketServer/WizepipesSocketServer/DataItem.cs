@@ -36,6 +36,8 @@ namespace WizepipesSocketServer
 
     class DataItem
     {
+        public static string Path { get; set; }
+
         public static log4net.ILog Log = log4net.LogManager.GetLogger(typeof(DataItem));
 
         public Socket socket;
@@ -302,6 +304,8 @@ namespace WizepipesSocketServer
                     case 0xFF:
                         status.clientStage = ClientStage.idle;
                         status.HeartTime = DateTime.Now;
+                        NetDb.UpdateSensorInfo(intDeviceID, "Status", Convert.ToInt32(status.clientStage));
+                        NetDb.UpdateSensorInfoWithTime(intDeviceID, "loginTime", status.HeartTime.ToString());
                         Console.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "设备号--" +
                             intDeviceID + "收到心跳包\r\n");
                         Log.Debug("设备号--" + intDeviceID + "收到心跳包\r\n");
@@ -374,23 +378,6 @@ namespace WizepipesSocketServer
             }
         }
 
-        public void CheckTimeout(int maxSessionTimeout)
-        {
-            if (status.clientStage != ClientStage.offLine)
-            {
-                TimeSpan ts = DateTime.Now.Subtract(status.HeartTime);
-                int elapsedSecond = Math.Abs((int)ts.TotalSeconds);
-                //TODO:2分钟在数据库标注，3分钟则断开
-                if (elapsedSecond > maxSessionTimeout) // 超时，则准备断开连接
-                {
-                    Console.WriteLine("设备号：" + intDeviceID + "超时,服务器主动断开连接");
-                    Log.Debug("设备号：" + intDeviceID + "超时,服务器主动断开连接");
-                    status.clientStage = ClientStage.offLine;
-                    NetDb.UpdateSensorInfo(intDeviceID, "Status", Convert.ToInt32(ClientStage.offLine));
-                    CloseSocket();
-                }
-            }
-        }
 
         /// <summary>
         /// 构造AD采样命令
@@ -428,7 +415,7 @@ namespace WizepipesSocketServer
         {
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + intDeviceID.ToString();//以日期时间命名，避免文件名重复
             byte[] fileStartAndEnd = new byte[2] { 0xAA, 0x55 };//保存文件的头是AA，尾是55
-            string url = @"D:\\Data\\";
+            string url = @Path;
 
             if (!Directory.Exists(url))//如果不存在就创建file文件夹　　             　　                
             {

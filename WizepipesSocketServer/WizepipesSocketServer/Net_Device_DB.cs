@@ -166,6 +166,43 @@ namespace WizepipesSocketServer
             }
         }
 
+        public static string UpdateSensorInfoWithTime(int sensorintdeviceID, string updateItem, string updateNum)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            strSQL =
+                "Update tsensorinfo SET " + updateItem + " =?sensorupdateItem WHERE intdeviceID=?sensorintdeviceID";
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?sensorintdeviceID", MySqlDbType.Int32),
+                new MySqlParameter("?sensorupdateItem", MySqlDbType.DateTime)
+            };
+            parmss[0].Value = sensorintdeviceID;
+            parmss[1].Value = updateNum;
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
+
         public static string UpdateSensorGPSinfo(int sensorintdeviceID, double Longitude, double Latitude)
         {
             MySQLDB.InitDb();
@@ -918,17 +955,17 @@ namespace WizepipesSocketServer
 
                         if (IsDelSuccessInsert != false)
                         {
-                            return "ok";
+                            return "1";
                         }
                         else
                         {
-                            return "fail";
+                            return null;
                         }
                     }
 
                     catch (Exception ex)
                     {
-                        return "fail"; //数据库异常
+                        return null; //数据库异常
                     }
                 }
                 else
@@ -940,7 +977,7 @@ namespace WizepipesSocketServer
                     {
                         new MySqlParameter("?leakTimes", MySqlDbType.Int32),
                     };
-                    parmss[0].Value = times + 1;
+                    parmss[0].Value = ++times;
 
                     try
                     {
@@ -948,24 +985,24 @@ namespace WizepipesSocketServer
 
                         if (IsDelSuccess != false)
                         {
-                            return "ok";
+                            return times.ToString();
                         }
                         else
                         {
-                            return "fail";
+                            return null;
                         }
                     }
 
                     catch (Exception ex)
                     {
-                        return "fail";
+                        return null;
                     }
                 }
 
             }
             catch (Exception ex)
             {
-                return "fail";
+                return null;
             }
         }
 
@@ -1018,19 +1055,32 @@ namespace WizepipesSocketServer
 
         }
 
-        public static string UpdateLeakPointScale(int pipeID, double scale)
+        public static string UpdateLeakPointScale(int pipeID, string updateItem,string item)
         {
             MySQLDB.InitDb();
             MySqlParameter[] parmss = null;
             bool IsDelSuccess = false;
 
             string strSQL2 =
-                "UPDATE tpipe SET LeakPointScale=?scale where pipeID=" + pipeID;
-            parmss = new MySqlParameter[]
+                "UPDATE tpipe SET "+ updateItem+" =?item where pipeID=" + pipeID;
+            
+            if (updateItem == "LeakPointScale")
             {
-                new MySqlParameter("?scale", MySqlDbType.VarChar),
-            };
-            parmss[0].Value = scale.ToString();
+                parmss = new MySqlParameter[]
+                {
+                    new MySqlParameter("?item", MySqlDbType.VarChar)
+                };
+                parmss[0].Value = item;
+
+            }
+            else if (updateItem == "Status")
+            {
+                parmss = new MySqlParameter[]
+                {
+                    new MySqlParameter("?item", MySqlDbType.Int32)
+                };
+                parmss[0].Value = Convert.ToInt32(item);
+            }
 
             try
             {

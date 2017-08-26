@@ -44,6 +44,7 @@ namespace WizepipesSocketServer
             string ConfigCapNextTime = System.Configuration.ConfigurationManager.AppSettings["CapNextTime"];
             string DB = System.Configuration.ConfigurationManager.AppSettings["ServerDB"];
             string ImagePath = System.Configuration.ConfigurationManager.AppSettings["ImagePath"];
+            string DataPath = System.Configuration.ConfigurationManager.AppSettings["DataPath"];
 
             msg = "从appConfig读取到的配置信息是：" + "ServerIP:" + ConfigIp + "\r\nServerPort:" + ConfigPort +
                   "\r\nbufferLength:" + ConfigbufferLength + "\r\nAdlength:" + ConfigAdlength +
@@ -52,7 +53,7 @@ namespace WizepipesSocketServer
                   "\r\n读取数据库线程休息时间：" + ConfigcheckDataBaseQueueTimeInterval
                   + "\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长：" + ConfigmaxTimeOut + "\r\n允许故障设备数：" +
                   ConfigmaxBadClient + "\r\n是否自动测试：" + ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB + "\r\n自动采样的间隔时长" +
-                  ConfigCapNextTime;
+                  ConfigCapNextTime+"\r\n图片和数据路径分别是："+ImagePath+"--"+DataPath+"\r\n";
 
             richTextBox1.AppendText(msg);
             //共12+1个
@@ -70,6 +71,7 @@ namespace WizepipesSocketServer
             server.CfgCapNextTime = Convert.ToInt32(ConfigCapNextTime);
             MySQLDB.strDbConn = DB;
             ZedToPng.Path = ImagePath;
+            DataItem.Path = DataPath;
 
         }
 
@@ -138,10 +140,18 @@ namespace WizepipesSocketServer
 
             //int i=a.GetLength(0);//行数
             //int j = a.GetLength(1);//列数
+
+            DateTime HeartTime = DateTime.Now;
+
+            string time = HeartTime.ToLongTimeString();
+            string time1 = HeartTime.ToShortTimeString();
+            string time2 = HeartTime.ToString();
+            //server.TestZed();
+
             List<int[]> AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
 
 
-            NetDb.UpdateLeakPointScale(5,0.456123);
+            //NetDb.UpdateLeakPointScale(5,0.456123);
 
             string distance = "3.9";
             if (Convert.ToDouble(distance) > 0 && Convert.ToDouble(distance) < 5)
