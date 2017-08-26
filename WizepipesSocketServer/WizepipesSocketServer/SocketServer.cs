@@ -402,7 +402,7 @@ namespace WizepipesSocketServer
                     foreach (DataItem dataItem in htClient.Values)
                     {
                         dataItem.SendData();
-                        if(CheckTimeout(dataItem.status.HeartTime, maxTimeOut))
+                        if(dataItem.status.clientStage==ClientStage.idle && CheckTimeout(dataItem.status.HeartTime, maxTimeOut))
                         {
                             Console.WriteLine("设备号：" + dataItem.intDeviceID + "超时,服务器主动断开连接");
                             Log.Debug("设备号：" + dataItem.intDeviceID + "超时,服务器主动断开连接");
@@ -410,7 +410,7 @@ namespace WizepipesSocketServer
                             NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", Convert.ToInt32(dataItem.status.clientStage));
                             dataItem.CloseSocket();
                         }
-                        else if (CheckTimeout(dataItem.status.HeartTime, maxTimeOut*10))
+                        if (dataItem.status.clientStage == ClientStage.offLine && CheckTimeout(dataItem.status.HeartTime, maxTimeOut*10))
                         {
                             Console.WriteLine("设备号：" + dataItem.intDeviceID + "超时,服务器主动删除连接");
                             Log.Debug("设备号：" + dataItem.intDeviceID + "超时,服务器主动删除连接");
@@ -538,8 +538,8 @@ namespace WizepipesSocketServer
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
                                 DbCmdLsit = htSendCmd[dataItem.intDeviceID] as List<byte[]>;
-                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
-                                Console.WriteLine(msg);
+                                //string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在";
+                                //Console.WriteLine(msg);
                             }
                             else
                             {
@@ -765,8 +765,8 @@ namespace WizepipesSocketServer
                             if (htSendCmd.ContainsKey(dataItem.intDeviceID)) //存在则更新
                             {
                                 htSendCmd[dataItem.intDeviceID] = DbCmdLsit;
-                                string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
-                                Console.WriteLine(msg);
+                                //string msg = DateTime.Now + "设备号: " + dataItem.intDeviceID + "存在则更新";
+                                //Console.WriteLine(msg);
                             }
 
                             //把从数据库读取的命令添加到队列中
@@ -1185,10 +1185,7 @@ namespace WizepipesSocketServer
         //测试画图的稳定性
         public void TestZed()
         {
-            AnalyzeList.Add(3);
-            AnalyzeList.Add(4);
-            AnalyzeList.Add(5);
-            AnalyzeData(AnalyzeList);
+            AnalyzeCaptureNowData(2, 5);
         }
 
 

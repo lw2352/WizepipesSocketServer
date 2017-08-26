@@ -53,7 +53,7 @@ namespace WizepipesSocketServer
                   "\r\n读取数据库线程休息时间：" + ConfigcheckDataBaseQueueTimeInterval
                   + "\r\n采样数据的总包数：" + Configg_totalPackageCount + "\r\n超时断开最大时长：" + ConfigmaxTimeOut + "\r\n允许故障设备数：" +
                   ConfigmaxBadClient + "\r\n是否自动测试：" + ConfigIsAutoTest + "\r\n数据库连接字符串：" + DB + "\r\n自动采样的间隔时长" +
-                  ConfigCapNextTime+"\r\n图片和数据路径分别是："+ImagePath+"--"+DataPath+"\r\n";
+                  ConfigCapNextTime+"\r\n";
 
             richTextBox1.AppendText(msg);
             //共12+1个
@@ -70,9 +70,6 @@ namespace WizepipesSocketServer
             server.CfgIsAutoTest = Convert.ToInt32(ConfigIsAutoTest);
             server.CfgCapNextTime = Convert.ToInt32(ConfigCapNextTime);
             MySQLDB.strDbConn = DB;
-            ZedToPng.Path = ImagePath;
-            DataItem.Path = DataPath;
-
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -87,14 +84,14 @@ namespace WizepipesSocketServer
 
         private void buttonCapNow_Click(object sender, EventArgs e)
         {
-            if (checkBoxAutoTest.Checked == true)
+            /*if (checkBoxAutoTest.Checked == true)
             {
                 server.CfgIsAutoTest = 1;
             }
             else
             {
                 server.CfgIsAutoTest = 0;
-            }
+            }*/
             server.SetCapTime(0xFF);
         }
 
@@ -117,6 +114,7 @@ namespace WizepipesSocketServer
 
         private void buttonAnalyze_Click(object sender, EventArgs e)
         {
+            server.TestZed();
             //server.CalculateOffset(7, 5, 1000, 5000);
             //List<int> testList = NetDb.GetpipeInfo(3,4);
             //string name = NetDb.GetSensorName(3);
@@ -141,19 +139,19 @@ namespace WizepipesSocketServer
             //int i=a.GetLength(0);//行数
             //int j = a.GetLength(1);//列数
 
-            DateTime HeartTime = DateTime.Now;
+            /*DateTime HeartTime = DateTime.Now;
 
             string time = HeartTime.ToLongTimeString();
             string time1 = HeartTime.ToShortTimeString();
-            string time2 = HeartTime.ToString();
+            string time2 = HeartTime.ToString();*/
             //server.TestZed();
 
-            List<int[]> AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
+            //List<int[]> AreaDeviceList = NetDb.readAllDeviceIdByAreaID();
 
 
             //NetDb.UpdateLeakPointScale(5,0.456123);
 
-            string distance = "3.9";
+            /*string distance = "3.9";
             if (Convert.ToDouble(distance) > 0 && Convert.ToDouble(distance) < 5)
             {
                 distance = null;
@@ -186,12 +184,12 @@ namespace WizepipesSocketServer
 
             int[,] a = new int[3, 4] {
                 {0, 1, 2, 3} ,   /*  初始化索引号为 0 的行 */
-                {4, 5, 6, 7} ,   /*  初始化索引号为 1 的行 */
-                {8, 9, 10, 11}   /*  初始化索引号为 2 的行 */
-            };
-            
+            //   {4, 5, 6, 7} ,   /*  初始化索引号为 1 的行 */
+            //    {8, 9, 10, 11}   /*  初始化索引号为 2 的行 */
+            //};
 
-            List<List<int>> sendDataQueue = new List<List<int>>(6);
+
+            /*List<List<int>> sendDataQueue = new List<List<int>>(6);
             if (sendDataQueue.Count > 0)
             {
                 int j = sendDataQueue[0].Count;
@@ -212,7 +210,7 @@ namespace WizepipesSocketServer
             List<byte[]> DbCmdLsit = new List<byte[]>();
             DbCmdLsit.Add(CmdSetCapTime);
 
-            int l = DbCmdLsit[0][4];
+            int l = DbCmdLsit[0][4];*/
 
             /* string strHour = "18,9,10,22";
              string strMinute = "15,16,52,45";

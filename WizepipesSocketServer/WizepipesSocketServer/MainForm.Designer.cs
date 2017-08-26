@@ -32,7 +32,6 @@
             this.buttonUpload = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.buttonAnalyze = new System.Windows.Forms.Button();
-            this.checkBoxAutoTest = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.buttonClear = new System.Windows.Forms.Button();
             this.buttonViewClientInfo = new System.Windows.Forms.Button();
@@ -67,7 +66,6 @@
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.buttonAnalyze);
-            this.groupBox1.Controls.Add(this.checkBoxAutoTest);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.buttonClear);
             this.groupBox1.Controls.Add(this.buttonViewClientInfo);
@@ -92,16 +90,6 @@
             this.buttonAnalyze.Text = "myTest";
             this.buttonAnalyze.UseVisualStyleBackColor = true;
             this.buttonAnalyze.Click += new System.EventHandler(this.buttonAnalyze_Click);
-            // 
-            // checkBoxAutoTest
-            // 
-            this.checkBoxAutoTest.AutoSize = true;
-            this.checkBoxAutoTest.Location = new System.Drawing.Point(27, 53);
-            this.checkBoxAutoTest.Name = "checkBoxAutoTest";
-            this.checkBoxAutoTest.Size = new System.Drawing.Size(72, 16);
-            this.checkBoxAutoTest.TabIndex = 31;
-            this.checkBoxAutoTest.Text = "自动测试";
-            this.checkBoxAutoTest.UseVisualStyleBackColor = true;
             // 
             // label1
             // 
@@ -201,7 +189,6 @@
         private System.Windows.Forms.Button buttonClear;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.CheckBox checkBoxAutoTest;
         private System.Windows.Forms.Button buttonAnalyze;
     }
 }

@@ -11,11 +11,8 @@ namespace WizepipesSocketServer
 {
     class ZedToPng
     {
-        public static string Path { get; set; }
-
         public static string SaveDataToPng(double[] data,int id)
         {
-
             ZedGraphControl zedGraphControl1 = new ZedGraphControl();
             GraphPane paneA = new GraphPane();
             PointPairList listA = new PointPairList();
@@ -44,7 +41,7 @@ namespace WizepipesSocketServer
                 paneA.ReSize(g, new RectangleF(0, 0, 1800, 300));
             }
 
-            string url = @Path;
+            string url = @"D:\PipeWeb\AdImages\";
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + id.ToString();//以日期时间命名，避免文件名重复
             string strName = url + filename + ".png";
 

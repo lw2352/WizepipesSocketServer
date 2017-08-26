@@ -177,7 +177,7 @@ namespace WizepipesSocketServer
             string strSQL = "";
             bool IsDelSuccess = false;
             strSQL = " insert into tsensorresult (SensorAID,SensorBID,AnalyzeResult,AnalyzeDate,AnalyzePipe,pathA, pathB, pathC, SensorName, Distance) values" +
-                     "(?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe, ?sensorpathA, ?sensorpathB, ?sensorpathC, ?SensorName, ?Distance);";
+                     " (?sensorSensorAID,?sensorSensorBID,?sensorAnalyzeResult,?sensorAnalyzeDate,?sensorAnalyzePipe, ?sensorpathA, ?sensorpathB, ?sensorpathC, ?SensorName, ?Distance);";
 
             parmss = new MySqlParameter[]
             {

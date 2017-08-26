@@ -122,10 +122,10 @@ namespace WizepipesSocketServer
                 if (t < 60)
                 {
                     string pathA = Net_Analyze_DB.readDataPath(idA);
-                    pathA = pathA.Replace("\\\\", "\\");
+                    //pathA = pathA.Replace("\\\\", "\\");
 
                     string pathB = Net_Analyze_DB.readDataPath(idB);
-                    pathB = pathB.Replace("\\\\", "\\");
+                    //pathB = pathB.Replace("\\\\", "\\");
 
                     //计算的同时调用画图
                     string resultA = ZedToPng.SaveDataToPng(getDataA(pathA), idA);

@@ -181,7 +181,7 @@ namespace WizepipesSocketServer
                 new MySqlParameter("?sensorupdateItem", MySqlDbType.DateTime)
             };
             parmss[0].Value = sensorintdeviceID;
-            parmss[1].Value = updateNum;
+            parmss[1].Value = Convert.ToDateTime(updateNum);
 
             try
             {
