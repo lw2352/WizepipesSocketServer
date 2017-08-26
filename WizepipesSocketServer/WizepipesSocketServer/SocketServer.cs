@@ -889,7 +889,7 @@ namespace WizepipesSocketServer
                         //上传完成，准备分析
                         if ((AnalyzeAreaList.Count > 0) && (AnalyzeAreaList[i].Count >= AreaDeviceList[i].Length - checkAreaResult[i, 1] - maxBadClient) && (AnalyzeAreaList[i].Count > maxBadClient) && (checkAreaResult[i, 2] == 0)) //没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                         {
-                            AnalyzeData(AnalyzeAreaList[i]); //分析AD数据并保存结果到数据库
+                            AnalyzeData(i, AnalyzeAreaList[i]); //分析AD数据并保存结果到数据库
 
                             if (IsAutoTest == true)
                             {
@@ -912,21 +912,22 @@ namespace WizepipesSocketServer
         }
 
         //分析AnalyzeList中的数据
-        private void AnalyzeData(List<int> analyzeList)
+        private void AnalyzeData(int index, List<int> analyzeList)
         {
 
             //对所有上传完成的设备进行基点分析，把结果写入数据库
-            for (int i = 0; i < AnalyzeList.Count - 1; i++) //at least 2 device
+            for (int i = 0; i < analyzeList.Count - 1; i++) //at least 2 device
             {
-                int idA = AnalyzeList[i];
+                int idA = analyzeList[i];
                 for (int j = i + 1; j < analyzeList.Count; j++)
                 {
-                    int idB = AnalyzeList[j];
+                    int idB = analyzeList[j];
                     AnalyzeCaptureNowData(idA, idB);
 
                 }
             }
-            AnalyzeList.Clear();
+            analyzeList.Clear();
+            analyzeList.RemoveAt(index);
             Console.WriteLine("分析完成,清空list");
         }
 
