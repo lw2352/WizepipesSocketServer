@@ -796,15 +796,17 @@ namespace WizepipesSocketServer
                             //把结果写入数据库
                             if (checkResult[i, 1] == 1)
                             {
+                                //先存起来，后面的程序复位设备的立即采样属性
+                                captureNowOverIDList.Add(MultiUserList[i, 1]);
+                                captureNowOverIDList.Add(MultiUserList[i, 2]);
+
                                 if (IsAutoTest == false)
                                 {
                                     NetDb.UpdateMultiUser("IsCapture", checkResult[i, 0], 0); //写入数据库表示立即采样完成
-                                    //先存起来，后面的程序复位设备的立即采样属性
-                                    captureNowOverIDList.Add(MultiUserList[i, 1]);
-                                    captureNowOverIDList.Add(MultiUserList[i, 2]);
+
                                 }
                                 else
-                                {
+                                {                                  
                                     NetDb.UpdateSensorCfg(MultiUserList[i, 1], "IsCaptureNow", 1);
                                     NetDb.UpdateSensorCfg(MultiUserList[i, 2], "IsCaptureNow", 1);
                                 }
@@ -842,6 +844,7 @@ namespace WizepipesSocketServer
                                     dataItem.status.HeartTime.ToString(),
                                     Convert.ToInt32(dataItem.status.clientStage),
                                     Convert.ToInt32(dataItem.status.adStage));
+
                             }
                         }
                         
@@ -898,7 +901,7 @@ namespace WizepipesSocketServer
                         if ((AnalyzeAreaList.Count > 0) && (AnalyzeAreaList[i].Count >= AreaDeviceList[i].Length - checkAreaResult[i, 1] - maxBadClient) && (AnalyzeAreaList[i].Count > maxBadClient) && (checkAreaResult[i, 2] == 0)) //没有正在上传的设备且上传完成的设备数大于等于总数减去容许故障设备数
                         {
                             AnalyzeData(i, AnalyzeAreaList[i]); //分析AD数据并保存结果到数据库
-
+                            Console.WriteLine("AnalyzeAreaList count is:" + AnalyzeAreaList.Count);
                             //if (IsAutoTest == true)
                             //{
                                 //TODO:把所有设备的立即采样属性设成立即采样
@@ -935,7 +938,7 @@ namespace WizepipesSocketServer
                 }
             }
             analyzeList.Clear();
-            analyzeList.RemoveAt(index);
+            AnalyzeAreaList.RemoveAt(index);
             Console.WriteLine("分析完成,清空list");
         }
 

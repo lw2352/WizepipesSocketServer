@@ -41,7 +41,7 @@ namespace WizepipesSocketServer
                 paneA.ReSize(g, new RectangleF(0, 0, 1800, 300));
             }
 
-            string url = @"D:\PipeWeb\AdImages\";
+            string url = @"D:\\PipeWeb\AdImages\\";
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + id.ToString();//以日期时间命名，避免文件名重复
             string strName = url + filename + ".png";
 
