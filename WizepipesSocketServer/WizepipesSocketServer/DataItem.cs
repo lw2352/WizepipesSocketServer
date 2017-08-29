@@ -413,7 +413,7 @@ namespace WizepipesSocketServer
         {
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + intDeviceID.ToString();//以日期时间命名，避免文件名重复
             byte[] fileStartAndEnd = new byte[2] { 0xAA, 0x55 };//保存文件的头是AA，尾是55
-            string url = @"D:\PipeWeb\Data\";
+            string url = @"D:\\PipeWeb\Data\\";
 
             if (!Directory.Exists(url))//如果不存在就创建file文件夹　　             　　                
             {
