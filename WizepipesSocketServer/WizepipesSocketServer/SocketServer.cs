@@ -981,6 +981,9 @@ namespace WizepipesSocketServer
                     string leakTimes = NetDb.UpdateLeakTimes(pipeInfoList[2]);
                     if (leakTimes != null)
                     {
+                        int times = Convert.ToInt32(leakTimes);
+                        if(1<=times && times<=2)
+                            //TODO:根据漏水次数来修改管子状态（有3个阶段）
                         NetDb.UpdateLeakPointScale(pipeInfoList[2], "Status", leakTimes);
                     } 
 
