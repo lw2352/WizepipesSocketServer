@@ -145,7 +145,7 @@ namespace WizepipesSocketServer
                                     status.HeartTime.ToString(),
                                     Convert.ToInt32(status.clientStage), Convert.ToInt32(status.adStage));
 
-                                sendDataQueue.Enqueue(CmdAD);
+                                SendCmd(CmdAD);
                                 msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
                                       intDeviceID + "--AD采样结束,属于立即采样，马上进行上传" + "\n";
                                 Log.Debug(msg);
@@ -297,6 +297,7 @@ namespace WizepipesSocketServer
                         Log.Debug(msg);
                         NetDb.UpdateSensorCfg(intDeviceID, "IsReconnect", 0);
                         NetDb.UpdateSensorInfo(intDeviceID, "Status", 0);//接收到8266的重连确认信息后，置设备状态为不在线0
+                        SendCmd(CmdItem.CmdEnterSleep);
                         break;
 
                     case 0xFF:
