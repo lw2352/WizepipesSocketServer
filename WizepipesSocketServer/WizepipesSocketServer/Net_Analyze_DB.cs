@@ -224,6 +224,70 @@ namespace WizepipesSocketServer
             }
         }
 
+        public static string UpdateAnalyzeResult(string[] updateItem, string[] updateNum)
+        {
+            MySQLDB.InitDb();
+            string strResult = "";
+            MySqlParameter[] parmss = null;
+            string strSQL = "";
+            bool IsDelSuccess = false;
+            int maxID = 0;
+            //从数据库中查找当前ID是否存在
+            try
+            {
+                DataSet ds1 = new DataSet("tsensorresult");
+                string strSQL1 = "SELECT MAX(resultID) from tsensorresult";
+                ds1 = MySQLDB.SelectDataSet(strSQL1, null);
+                if (ds1 != null)
+                {
+                    if (ds1.Tables[0].Rows.Count > 0)
+                    {
+                        if (ds1.Tables[0].Rows[0][0].ToString() != "")
+                        {
+                            maxID = Convert.ToInt32(ds1.Tables[0].Rows[0][0]);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return "fail"; //数据库异常
+            }
+
+            strSQL =
+                "Update tsensorresult SET " + updateItem[0] + " =?Item0, "+ updateItem[1] + " =?Item1, "+ updateItem[2] + " =?Item2, " + updateItem[3] + " =?Item3 " + " WHERE resultID=" + maxID;
+            parmss = new MySqlParameter[]
+            {
+                new MySqlParameter("?Item0", MySqlDbType.VarChar),
+                new MySqlParameter("?Item1", MySqlDbType.VarChar),
+                new MySqlParameter("?Item2", MySqlDbType.VarChar),
+                new MySqlParameter("?Item3", MySqlDbType.VarChar)
+            };
+            parmss[0].Value = updateNum[0];
+            parmss[1].Value = updateNum[1];
+            parmss[2].Value = updateNum[2];
+            parmss[3].Value = updateNum[3];
+
+            try
+            {
+                IsDelSuccess = MySQLDB.ExecuteNonQry(strSQL, parmss);
+
+                if (IsDelSuccess != false)
+                {
+                    return "ok";
+                }
+                else
+                {
+                    return "fail";
+                }
+            }
+
+            catch (Exception ex)
+            {
+                return "fail";
+            }
+        }
 
 
         //"获取path对应的归一化DataA")]//add 3-28

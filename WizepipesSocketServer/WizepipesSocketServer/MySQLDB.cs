@@ -9,6 +9,8 @@ using MySql.Data.MySqlClient;
 
 public class  MySQLDB
 {
+    public static log4net.ILog Log = log4net.LogManager.GetLogger(typeof(MySQLDB));
+
     private static string m_strConn = null;
     //   public static OperationTxT oper = new OperationTxT(@"D:\\ShopServiceLog.txt");
     public static MySqlConnection conn = null;
@@ -147,6 +149,7 @@ public class  MySQLDB
         catch (System.Exception ex)
         {
             conn_single.Close();
+            Log.Debug(ex);
             return null;
         }
 
@@ -244,6 +247,7 @@ public class  MySQLDB
         catch (System.Exception ex)
         {
             conn_single.Close();
+            Log.Debug(ex);
             return null;
         }
 
@@ -282,6 +286,7 @@ public class  MySQLDB
         catch (System.Exception ex)
         {
             conn_single.Close();
+            Log.Debug(ex);
             return null;
         }
 
@@ -327,6 +332,7 @@ public class  MySQLDB
         catch (System.Exception ex)
         {
             conn_single.Close();
+            Log.Debug(ex);
             //oper.opertxt(System.DateTime.Now + ex.Message);
             return false;
         }
@@ -410,6 +416,7 @@ public class  MySQLDB
         catch (System.Exception ex)
         {
             conn_single.Close();
+            Log.Debug(ex);
             //oper.opertxt(System.DateTime.Now + ex.Message);
             return ex.Message;
            //return "-1";

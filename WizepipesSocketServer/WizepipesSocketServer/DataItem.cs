@@ -299,6 +299,14 @@ namespace WizepipesSocketServer
                         NetDb.UpdateSensorInfo(intDeviceID, "Status", 0);//接收到8266的重连确认信息后，置设备状态为不在线0
                         break;
 
+                    case 0x34:
+                        msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "硬件" + strAddress + "设备号--" +
+                              intDeviceID + "--进入休眠" + "\n";
+                        Console.WriteLine(msg);
+                        Log.Debug(msg);
+                        NetDb.UpdateSensorInfo(intDeviceID, "Status", 2);//设备状态为2表示进入休眠，
+                        break;
+
                     case 0xFF:
                         status.clientStage = ClientStage.idle;
                         status.HeartTime = DateTime.Now;
@@ -413,7 +421,7 @@ namespace WizepipesSocketServer
         {
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + "--" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + "-" + DateTime.Now.Second.ToString() + "--" + intDeviceID.ToString();//以日期时间命名，避免文件名重复
             byte[] fileStartAndEnd = new byte[2] { 0xAA, 0x55 };//保存文件的头是AA，尾是55
-            string url = @"D:\\PipeWeb\Data\\";
+            string url = @"D:\\PipeWeb\\Data\\";
 
             if (!Directory.Exists(url))//如果不存在就创建file文件夹　　             　　                
             {

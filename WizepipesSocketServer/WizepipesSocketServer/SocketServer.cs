@@ -750,8 +750,8 @@ namespace WizepipesSocketServer
                                 {
                                     DbCmdLsit.RemoveAt(8);
                                     DbCmdLsit.Insert(8, CmdReconnectTcp);
-                                    NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsReconnect", 0);
-                                    NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", 0);
+                                    //NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsReconnect", 0);
+                                    //NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", 0);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(CmdReconnectTcp));
                                 }
 
@@ -840,10 +840,10 @@ namespace WizepipesSocketServer
                                 dataItem.status.IsCaptureNow = false;
                                 dataItem.status.adStage = AdStage.Idle;
                                 dataItem.status.HeartTime = DateTime.Now;
-                                NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
-                                    dataItem.status.HeartTime.ToString(),
-                                    Convert.ToInt32(dataItem.status.clientStage),
-                                    Convert.ToInt32(dataItem.status.adStage));
+                               // NetDb.addsensorinfo(dataItem.intDeviceID, dataItem.strAddress, dataItem.strAddress,
+                                    //dataItem.status.HeartTime.ToString(),
+                                   // Convert.ToInt32(dataItem.status.clientStage),
+                                    //Convert.ToInt32(dataItem.status.adStage));
 
                             }
                         }
@@ -971,6 +971,12 @@ namespace WizepipesSocketServer
 
                 Net_Analyze_DB.writeAnalyzeResult(idA, idB, resultList[0], DateTime.Now.ToString(), pipeInfoList[2],
                     resultList[1], resultList[2], resultList[3], sensorName[1], distance);
+
+                //把A、B的平均值和均方差（标准差）更新到数据库中，按最大的自增ID来
+                string[] updateItem = new[] { "averageA", "averageB", "varianceA", "varianceB" };
+                string[] updateNum = new[] { resultList[4], resultList[5], resultList[6], resultList[7] };
+                Net_Analyze_DB.UpdateAnalyzeResult(updateItem, updateNum);
+
                 Log.Debug("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
                 Log.Debug("图片路径分别为：" + resultList[1] + resultList[2] + resultList[3]);
                 Console.WriteLine("设备" + idA + "号和" + idB + "号的基点为：" + resultList[0]);
@@ -985,9 +991,16 @@ namespace WizepipesSocketServer
                     if (leakTimes != null)
                     {
                         int times = Convert.ToInt32(leakTimes);
-                        if(1<=times && times<=2)
-                            //TODO:根据漏水次数来修改管子状态（有3个阶段）
-                        NetDb.UpdateLeakPointScale(pipeInfoList[2], "Status", leakTimes);
+                        //TODO:根据漏水次数来修改管子状态（有3个阶段）
+                        if (1 <= times && times <= 2)
+                        {
+                            NetDb.UpdateLeakPointScale(pipeInfoList[2], "Status", "1");
+                            
+                        }
+                        if (times >= 3)
+                        {
+                            NetDb.UpdateLeakPointScale(pipeInfoList[2], "Status", "2");
+                        }
                     } 
 
                     

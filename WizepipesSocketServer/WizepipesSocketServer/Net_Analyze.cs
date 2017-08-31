@@ -11,11 +11,34 @@ namespace WizepipesSocketServer
     {
         private static double[] g_DataA = new double[300000 - 10000];//归一化后的A
         private static double[] g_DataB = new double[300000 - 10000];
-        private static double[] g_DataC = new double[300000 - 10000];
+        //private static double[] g_DataC = new double[300000 - 10000];
         private static int g_DataLength = 300000 - 10000;
         private static int g_OffSet = 0;
         public static int cutNum = 10000;
 
+        private static double averageA = 0;
+        private static double averageB = 0;
+        private static double varianceA = 0;
+        private static double varianceB = 0;       
+
+        /**
+	 * 只遍历数组一次求方差，利用公式DX^2=EX^2-(EX)^2
+	 * @param a
+	 * @return
+	 */
+        private static double ComputeVariance(double[] a)
+        {
+            double variance = 0;//方差
+            double sum = 0, sum2 = 0;
+            int i = 0, len = a.Length;
+            for (; i < len; i++)
+            {
+                sum += a[i];
+                sum2 += a[i] * a[i];
+            }
+            variance = sum2 / len - (sum / len) * (sum / len);
+            return variance;
+        }
 
         public static double[] getDataA(string FileName)
         {
@@ -37,6 +60,10 @@ namespace WizepipesSocketServer
             dataA_avg = 0;
             for (int i = 0; i < datalength; i++)
                 dataA_avg += dataA[i] / datalength;
+
+            //保存原始数据的平均值和均方差（标准差）
+            averageA = dataA_avg;
+            varianceA = Math.Sqrt(ComputeVariance(dataA));
 
             for (int i = 0; i < datalength; i++)//归一处理
                 dataA[i] = (dataA[i] - dataA_avg) / dataA_avg;
@@ -65,6 +92,10 @@ namespace WizepipesSocketServer
             dataB_avg = 0;
             for (int i = 0; i < datalength; i++)
                 dataB_avg += dataB[i] / datalength;
+
+            //保存原始数据的平均值和均方差（标准差）
+            averageB = dataB_avg;
+            varianceB = Math.Sqrt(ComputeVariance(dataB));
 
             for (int i = 0; i < datalength; i++)//归一处理
                 dataB[i] = (dataB[i] - dataB_avg) / dataB_avg;
@@ -119,7 +150,7 @@ namespace WizepipesSocketServer
 
                 double t = ts.TotalMinutes;
 
-                if (t < 60)
+                if (t < 10)
                 {
                     string pathA = Net_Analyze_DB.readDataPath(idA);
                     pathA = pathA.Replace("\\\\", "\\");
@@ -138,6 +169,11 @@ namespace WizepipesSocketServer
                     resultList.Add(resultA);
                     resultList.Add(resultB);
                     resultList.Add(resultC);
+
+                    resultList.Add(averageA.ToString());
+                    resultList.Add(averageB.ToString());
+                    resultList.Add(varianceA.ToString());
+                    resultList.Add(varianceB.ToString());
                     //return resultList;
                 }
                 else
@@ -146,10 +182,20 @@ namespace WizepipesSocketServer
                     resultList.Add("fail");
                     resultList.Add("fail");
                     resultList.Add("fail");
+
+                    resultList.Add("fail");
+                    resultList.Add("fail");
+                    resultList.Add("fail");
+                    resultList.Add("fail");
                 }
             }
             else
             {
+                resultList.Add("fail");
+                resultList.Add("fail");
+                resultList.Add("fail");
+                resultList.Add("fail");
+
                 resultList.Add("fail");
                 resultList.Add("fail");
                 resultList.Add("fail");
