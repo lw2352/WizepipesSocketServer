@@ -750,8 +750,8 @@ namespace WizepipesSocketServer
                                 {
                                     DbCmdLsit.RemoveAt(8);
                                     DbCmdLsit.Insert(8, CmdReconnectTcp);
-                                    //NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsReconnect", 0);
-                                    //NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", 0);
+                                    NetDb.UpdateSensorCfg(dataItem.intDeviceID, "IsReconnect", 0);
+                                    NetDb.UpdateSensorInfo(dataItem.intDeviceID, "Status", 0);
                                     Console.WriteLine("向设备号" + dataItem.intDeviceID + "--加入的命令是:" + byteToHexStr(CmdReconnectTcp));
                                 }
 
