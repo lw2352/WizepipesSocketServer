@@ -626,7 +626,7 @@ namespace WizepipesSocketServer
             {
                 DataSet ds1 = new DataSet("tsensor");
                 string strSQL1 =
-                    "SELECT SensorID FROM tsensor where (intdeviceID=" + idA + " or intdeviceID=" + idB + ")";
+                    "SELECT SensorID FROM tsensor where (DeviceID=" + idA + " or DeviceID=" + idB + ")";
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
@@ -791,7 +791,7 @@ namespace WizepipesSocketServer
             {
                 DataSet ds1 = new DataSet("tsensor");
                 string strSQL1 =
-                    "SELECT SensorID, SensorName FROM tsensor where IntdeviceID=" + intDeviceID;
+                    "SELECT SensorID, SensorName FROM tsensor where DeviceID=" + intDeviceID;
                 ds1 = MySQLDB.SelectDataSet(strSQL1, null);
                 if (ds1 != null)
                 {
@@ -1139,7 +1139,7 @@ namespace WizepipesSocketServer
                 {
                     DataSet ds2 = new DataSet("tsensor");
                     string strSQL2 =
-                        "SELECT distinct IntdeviceID FROM tsensor where AreaID = "+result[i]+ " and IntdeviceID is not null order by IntdeviceID ASC"; //返回不重复的目标字段
+                        "SELECT distinct DeviceID FROM tsensor where AreaID = "+result[i]+ " and DeviceID is not null order by DeviceID ASC"; //返回不重复的目标字段
                     ds2 = MySQLDB.SelectDataSet(strSQL2, null);
                     if (ds2 != null)
                     {

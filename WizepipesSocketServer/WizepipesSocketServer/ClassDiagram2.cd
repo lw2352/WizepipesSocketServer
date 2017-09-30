@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="WizepipesSocketServer.CmdItem" Collapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgCAQAAAIAIALAAAAAgAAAAAACGAAABAAIAAQAEAAAA=</HashCode>
+      <FileName>CommandClass.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.DataItem" Collapsed="true">
+    <Position X="2.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQQAAAAAIAAAAAAAAwAAMABAUzAAAAAAAFCCAAAAAA=</HashCode>
+      <FileName>DataItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.GPSDistance" Collapsed="true">
+    <Position X="4" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAIAAAACAAAAAAAAAAAAACAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>GPSDistance.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.MainForm" Collapsed="true">
+    <Position X="5.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAACAAAABCEAgBBQAACAAAACAAAAAAgAAOAQIAAGAAI=</HashCode>
+      <FileName>MainForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.Net_Analyze" Collapsed="true">
+    <Position X="2.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BABAAgAAgACAAQAgCAAIAAABAAAAAQAAAAAEAIIAAAA=</HashCode>
+      <FileName>Net_Analyze.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.Net_Analyze_DB" Collapsed="true">
+    <Position X="4" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAACEAAAAAAAAAAAAAAAAAAAAABAAAACAIAAAAAAA=</HashCode>
+      <FileName>Net_Analyze_DB.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.NetDb" Collapsed="true">
+    <Position X="5.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAgAAAAAAIAAARABAACRAAEAAEACABAAgEABA=</HashCode>
+      <FileName>Net_Device_DB.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.Program" Collapsed="true">
+    <Position X="0.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAgAAIAAAAAABAAAAAQ=</HashCode>
+      <FileName>Program.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.SocketServer" Collapsed="true">
+    <Position X="5.75" Y="2.5" Width="1.5" />
+    <NestedTypes>
+      <Delegate Name="WizepipesSocketServer.SocketServer.AsyncAnalyzeCaptureNowData" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>SocketServer.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>JiIQIQkQgAQQIgkQoQTCoDFANEgswBBCIhQFAABAAAA=</HashCode>
+      <FileName>SocketServer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.ZedToPng">
+    <Position X="0.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ZedToPng.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MySQLDB" Collapsed="true">
+    <Position X="0.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAAAAAAAAAEAAChAwQgAAEAAAAAAgAABA=</HashCode>
+      <FileName>MySQLDB.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.Properties.Resources" Collapsed="true">
+    <Position X="2.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAABEAAAAQAAAAAAAAAAAAAAAIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WizepipesSocketServer.Properties.Settings">
+    <Position X="4" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAIAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="WizepipesSocketServer.Status" Collapsed="true">
+    <Position X="0.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AoAAACgoAAAAQAAAAABAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>DataItem.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="WizepipesSocketServer.ClientStage" Collapsed="true">
+    <Position X="2.25" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>DataItem.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="WizepipesSocketServer.AdStage" Collapsed="true">
+    <Position X="0.5" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAIAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>DataItem.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Microsoft YaHei UI" Size="9" />
+</ClassDiagram>
