@@ -69,6 +69,7 @@ namespace WizepipesSocketServer
             status.currentsendbulk = 0;
             status.byteAllData = new byte[byteAllDataLength];
             status.HeartTime = DateTime.Now;
+            //TODO:初始化包长、总包数、ad数据长度，用来确定采样时长
         }
 
         public void HandleData()
